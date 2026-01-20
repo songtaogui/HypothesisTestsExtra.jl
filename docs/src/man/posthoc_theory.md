@@ -52,9 +52,64 @@ Identifies specific cells that are over- or under-represented.
 All group-level post-hoc tests support `cld=true`. This generates a string representation where groups sharing the same letter are **not** significantly different.
 
 ```julia
-res = PostHocTest(df, :Group, :Value; cld=true)
-# Output might look like:
-# Group A: "a"
-# Group B: "a"
-# Group C: "b"  (C is different from A and B)
+# 3 groups with different distributions
+  g1 = rand(10)
+  g2 = rand(10) .+ 2
+  g3 = rand(10) .+ 0.5
+  
+# Perform Dunn's test with Bonferroni correction and generate CLD letters
+result = PostHocNonPar([g1, g2, g3]; method=:dunn_bonferroni, cld=true, row_labels=["Ctrl", "TrtA", "TrtB"])
+```
+
+
+You will get:
+
+```plain
+------------------------------
+Post-hoc Test: :dunn_bonferroni (alpha=0.05)
+------------------------------
+
+Compact Letter Display (Means sorted descending):
+┌────────────┬────────────┬────────┐
+│ GroupIndex │ GroupLabel │    CLD │
+│      Int64 │     String │ String │
+├────────────┼────────────┼────────┤
+│          1 │       Ctrl │      b │
+│          2 │       TrtA │      a │
+│          3 │       TrtB │      b │
+└────────────┴────────────┴────────┘
+
+Pairwise Comparisons:
+┌─────────────┬─────────┬─────────┬─────────┬──────────┬────────────┬───────────┬───────────┬────────┬─────────────────┐
+│    Contrast │    Diff │ Std.Err │    Stat │ Critical │    P-value │ Lower 95% │ Upper 95% │    Sig │            Note │
+│      String │ Float64 │ Float64 │ Float64 │  Float64 │    Float64 │   Float64 │   Float64 │ String │          String │
+├─────────────┼─────────┼─────────┼─────────┼──────────┼────────────┼───────────┼───────────┼────────┼─────────────────┤
+│ Ctrl - TrtA │   -19.6 │   3.937 │  4.9784 │  2.39398 │ 1.92331e-6 │  -29.0251 │  -10.1749 │      * │ Adj: Bonferroni │
+│ Ctrl - TrtB │    -9.2 │   3.937 │  2.3368 │  2.39398 │  0.0583484 │  -18.6251 │  0.225108 │        │ Adj: Bonferroni │
+│ TrtA - TrtB │    10.4 │   3.937 │  2.6416 │  2.39398 │  0.0247544 │  0.974892 │   19.8251 │      * │ Adj: Bonferroni │
+└─────────────┴─────────┴─────────┴─────────┴──────────┴────────────┴───────────┴───────────┴────────┴─────────────────┘
+```
+
+You can then use `GroupTestToDataframe` to get DataFrame of CLD:
+```julia
+julia> GroupTestToDataframe(result)
+3×3 DataFrame
+ Row │ GroupIndex  GroupLabel  CLD    
+     │ Int64       String      String 
+─────┼────────────────────────────────
+   1 │          1  Ctrl        b
+   2 │          2  TrtA        a
+   3 │          3  TrtB        b
+```
+
+You can get the PostHoc Details use `DataFrame`:
+```julia
+julia> DataFrame(result)
+3×10 DataFrame
+ Row │ Contrast     Diff     Std.Err  Stat     Critical  P-value     Lower 95%   Upper 95%   Sig     Note            
+     │ String       Float64  Float64  Float64  Float64   Float64     Float64     Float64     String  String          
+─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ Ctrl - TrtA    -19.6    3.937   4.9784   2.39398  1.92331e-6  -29.0251    -10.1749    *       Adj: Bonferroni
+   2 │ Ctrl - TrtB     -9.2    3.937   2.3368   2.39398  0.0583484   -18.6251      0.225108          Adj: Bonferroni
+   3 │ TrtA - TrtB     10.4    3.937   2.6416   2.39398  0.0247544     0.974892   19.8251    *       Adj: Bonferroni
 ```

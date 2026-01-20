@@ -29,6 +29,27 @@ df = DataFrame(
 UnequalVarianceTTest(df, :Gender, :Score)
 ```
 
+You will get:
+```plain
+Two sample t-test (unequal variance)
+------------------------------------
+Population details:
+    parameter of interest:   Mean difference
+    value under h_0:         0
+    point estimate:          5.83333
+    95% confidence interval: (-1.414, 13.08)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.0800
+
+Details:
+    number of observations:   [2,3]
+    t-statistic:              2.7933040956366755
+    degrees of freedom:       2.6086358344798386
+    empirical standard error: 2.088327347690278
+```
+
 ### 2. Contingency Tables from DataFrames
 You can perform categorical tests on DataFrames in two formats:
 
