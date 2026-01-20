@@ -1,6 +1,6 @@
-using Test
-using HypothesisTests
 using HypothesisTestsExtra
+using HypothesisTests
+using Test
 using DataFrames
 using Random
 using Statistics
@@ -50,6 +50,8 @@ Random.seed!(1234)
         m_2x2 = [10 5; 2 15]
         ft_2x2 = FisherExactTestRxC(m_2x2)
         @test ft_2x2 isa HypothesisTests.FisherExactTest
+        ftr = FisherExactTest(m_2x2)
+        @test ftr isa HypothesisTests.FisherExactTest
         
         # 2.2 RxC (should use FisherExactTestMC)
         m_rxc = [5 10 2; 3 15 7; 12 4 10]
@@ -111,14 +113,21 @@ Random.seed!(1234)
         )
         res_df = PostHocTest(df, :grp, :val; method=:tukey)
         @test res_df isa PostHocTestResult
+        top66="\n------------------------------\nPost-hoc Test: :tukey (alpha=0.05)"
+        @test sprint(show, res_df)[1:66] == top66
 
         # 3.4 Results to DataFrame
         df_res = DataFrame(res_df)
         @test nrow(df_res) == 3
         @test "P-value" in names(df_res)
         
-        df_cld = GroupTestToDataframe(res_df) # 测试 GroupTestToDataframe
+        df_cld = GroupTestToDataframe(res_df)
         @test nrow(df_cld) == 3 # 3 groups
+
+        ph = PostHocTest(1:5, 1:5; cld = true)
+        tt = PostHocTestResult(ph.method, ph.comparisons, ph.alpha, ph.use_cld, ph.cld_letters, Dict{Int64, String}())
+        df_tt = GroupTestToDataframe(tt)
+        @test nrow(df_tt) == 2
     end
 
     # ==========================================================================
@@ -135,6 +144,12 @@ Random.seed!(1234)
         
         res_nemenyi = PostHocNonPar([g1, g2, g3]; method=:nemenyi)
         @test res_nemenyi.method == :nemenyi
+
+        res_nemenyi = PostHocNonPar([g1, g2, g3]; method=:dunn)
+        @test res_nemenyi.method == :dunn
+
+        res_nemenyi = PostHocNonPar([g1, g2, g3]; method=:dunn_sidak, cld=true)
+        @test res_nemenyi.method == :dunn_sidak
 
         # 4.2 DataFrame API
         df = DataFrame(
@@ -155,6 +170,8 @@ Random.seed!(1234)
         # ASR
         asr_cell = PostHocContingencyCell(tbl; method=:asr, adjustment=:bonferroni)
         @test asr_cell isa ContingencyCellTestResult
+        @test sprint(show, asr_cell)[1:69] == "\n========================================\nPost-hoc Cell Analysis: :asr"
+
         # fisher_1vsall
         fisher_cell = PostHocContingencyCell(tbl; method=:fisher_1vsall, adjustment=:bonferroni)
         @test fisher_cell isa ContingencyCellTestResult
