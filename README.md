@@ -1,8 +1,9 @@
 # HypothesisTestsExtra.jl
 
+[![Build Status](https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/ci.yml?query=branch%3Amaster)
 [![codecov](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl/branch/master/graph/badge.svg?token=DYlPBrm49f)](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl)
 
-**HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard `HypothesisTests.jl`. It fills critical gaps in statistical analysis by providing robust support for:
+**HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard [`HypothesisTests.jl`](https://github.com/JuliaStats/HypothesisTests.jl). It fills critical gaps in statistical analysis by providing robust support for:
 
 1.  **Heteroscedastic Data**: Welch's ANOVA for unequal variances.
 2.  **Complex Categorical Data**: Fisher's Exact Test for $R \times C$ tables via Monte Carlo simulation.

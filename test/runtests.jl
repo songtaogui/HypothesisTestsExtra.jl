@@ -170,7 +170,7 @@ Random.seed!(1234)
         # ASR
         asr_cell = PostHocContingencyCell(tbl; method=:asr, adjustment=:bonferroni)
         @test asr_cell isa ContingencyCellTestResult
-        @test sprint(show, asr_cell)[1:69] == "\n========================================\nPost-hoc Cell Analysis: :asr"
+        @test sprint(show, asr_cell)[1:70] == "\n========================================\nPost-hoc Cell Analysis: :asr"
 
         # fisher_1vsall
         fisher_cell = PostHocContingencyCell(tbl; method=:fisher_1vsall, adjustment=:bonferroni)
