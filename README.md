@@ -1,7 +1,12 @@
 # HypothesisTestsExtra.jl
 
-[![Build Status](https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/ci.yml?query=branch%3Amaster)
-[![codecov](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl/branch/master/graph/badge.svg?token=DYlPBrm49f)](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl)
+[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] [![codecov](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl/branch/master/graph/badge.svg?token=DYlPBrm49f)](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl)
+
+[docs-latest-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-latest-url]: tbd
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: tbd
 
 **HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard [`HypothesisTests.jl`](https://github.com/JuliaStats/HypothesisTests.jl). It fills critical gaps in statistical analysis by providing robust support for:
 
