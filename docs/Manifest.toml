@@ -2,7 +2,7 @@
 
 julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "8537efc6627f3a3d3a914c451e003489cd235b03"
+project_hash = "61f6f76c7d70574e86ff42e8b12d5db0f3abd329"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -266,17 +266,17 @@ git-tree-sha1 = "68c173f4f449de5b438ee67ed0c9c748dc31a2ec"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.28"
 
-[[deps.HypothesisTestsExtra]]
-deps = ["DataFrames", "Distributions", "FreqTables", "HypothesisTests", "LinearAlgebra", "NamedArrays", "PrettyTables", "Printf", "Random", "Reexport", "Rmath", "SpecialFunctions", "Statistics", "StatsAPI"]
-path = ".."
-uuid = "ddd859b9-8813-4e20-ab59-a7b08a106634"
-version = "0.1.0"
-
 [[deps.HypothesisTests]]
 deps = ["Combinatorics", "Distributions", "LinearAlgebra", "Printf", "Random", "Roots", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
 git-tree-sha1 = "b67985bd11331ccef26109a6269dbaae01474a72"
 uuid = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 version = "0.11.6"
+
+[[deps.HypothesisTestsExtra]]
+deps = ["DataFrames", "Distributions", "FreqTables", "HypothesisTests", "LinearAlgebra", "NamedArrays", "PrettyTables", "Printf", "Random", "Reexport", "Rmath", "SpecialFunctions", "Statistics", "StatsAPI", "Test"]
+path = ".."
+uuid = "ddd859b9-8813-4e20-ab59-a7b08a106634"
+version = "0.1.0"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
