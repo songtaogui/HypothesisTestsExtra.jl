@@ -7,7 +7,7 @@
 | [![][docs-stable-img]][docs-stable-url] | [![][build-status-img]][build-status-url] | [![][License-img]][License-url] |
 | [![][docs-latest-img]][docs-latest-url] | [![][code-cov-img]][code-cov-url] | [![][Lifecycle-img]][Lifecycle-url] |
 
-[License-img]: https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge&logo=coursera&labelColor=darkgreen&color=C7E9C0
+[License-img]: https://img.shields.io/badge/license-MIT-purple.svg?style=for-the-badge&logo=coursera&labelColor=purple&color=EFEDF5
 [License-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl?tab=MIT-1-ov-file
 
 [docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
@@ -16,10 +16,10 @@
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
 [docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
 
-[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=master&style=for-the-badge&logo=Julia&logoColor=white&labelColor=black&color=C7E9C0
+[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=master&style=for-the-badge&logo=Julia&logoColor=white&labelColor=darkgreen&color=C7E9C0
 [build-status-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/CI.yml?query=branch%3Amaster
 
-[code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
+[code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=C7E9C0&labelColor=darkgreen&color=C7E9C0
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
 
 [Lifecycle-img]: https://img.shields.io/badge/lifecycle-wip-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
