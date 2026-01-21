@@ -22,10 +22,13 @@
 [code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
 
+<<<<<<< HEAD
 [Lifecycle-img]: https://img.shields.io/badge/life-experimental-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
 [Lifecycle-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/releases
 
 
+=======
+>>>>>>> 792b00eefdfdb5ce708eeb5a2b4d70e61972fdde
 ---
 
 **HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard [`HypothesisTests.jl`](https://github.com/JuliaStats/HypothesisTests.jl). It fills critical gaps in statistical analysis by providing robust support for:
