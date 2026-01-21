@@ -3,7 +3,7 @@
 ---
 
 | Documentation | Status | Meta Info |
-| :---: | :---: | :---: |
+| :--- | :--- | :--- |
 | [![][docs-stable-img]][docs-stable-url] | [![][build-status-img]][build-status-url] | [![][License-img]][License-url] |
 | [![][docs-latest-img]][docs-latest-url] | [![][code-cov-img]][code-cov-url] | [![][Lifecycle-img]][Lifecycle-url] |
 
