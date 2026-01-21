@@ -8,7 +8,7 @@
 | [![][docs-latest-img]][docs-latest-url] | [![][code-cov-img]][code-cov-url] | [![][Lifecycle-img]][Lifecycle-url] |
 
 [License-img]: https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge&logo=coursera&labelColor=darkgreen&color=C7E9C0
-[License-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/blob/master/LICENSE
+[License-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl?tab=MIT-1-ov-file
 
 [docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
 [docs-latest-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
@@ -22,7 +22,7 @@
 [code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
 
-[Lifecycle-img]: https://img.shields.io/badge/life-experimental-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
+[Lifecycle-img]: https://img.shields.io/badge/lifecycle-wip-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
 [Lifecycle-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/releases
 
 
