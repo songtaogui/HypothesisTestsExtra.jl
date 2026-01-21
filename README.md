@@ -1,6 +1,8 @@
 # HypothesisTestsExtra.jl
 
-[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] [![][code-cov-img]][code-cov-url] 
+---
+
+[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] [![][build-status-img]][build-status-url]  [![][code-cov-img]][code-cov-url] 
 
 [docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white
 [docs-latest-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
@@ -8,8 +10,13 @@
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white
 [docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
 
-[code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=julia&labelColor=black&color=purple
+[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=main&style=for-the-badge&logo=Julia&logoColor=white&labelColor=black&color=C7E9C0
+[build-status-url]: https://github.com/jonathanBieler/BurrowsWheelerAligner.jl/actions/workflows/CI.yml?query=branch%3Amain)
+
+[code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
+
+---
 
 **HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard [`HypothesisTests.jl`](https://github.com/JuliaStats/HypothesisTests.jl). It fills critical gaps in statistical analysis by providing robust support for:
 
