@@ -1,12 +1,32 @@
 # HypothesisTestsExtra.jl
 
-[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] [![codecov](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl/branch/master/graph/badge.svg?token=DYlPBrm49f)](https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl)
+---
 
-[docs-latest-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-latest-url]: tbd
+| Documentation | Status | Meta Info |
+| :---: | :---: | :---: |
+| [![][docs-stable-img]][docs-stable-url] | [![][build-status-img]][build-status-url] | [![][License-img]][License-url] |
+| [![][docs-latest-img]][docs-latest-url] | [![][code-cov-img]][code-cov-url] | [![][Lifecycle-img]][Lifecycle-url] |
 
-[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: tbd
+[License-img]: https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge&logo=coursera&labelColor=darkgreen&color=C7E9C0
+[License-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/blob/master/LICENSE
+
+[docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
+[docs-latest-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
+[docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
+
+[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=master&style=for-the-badge&logo=Julia&logoColor=white&labelColor=black&color=C7E9C0
+[build-status-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/CI.yml?query=branch%3Amaster
+
+[code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
+[code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
+
+[Lifecycle-img]: https://img.shields.io/badge/life-experimental-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
+[Lifecycle-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/releases
+
+
+---
 
 **HypothesisTestsExtra.jl** is an extension library for the Julia ecosystem's standard [`HypothesisTests.jl`](https://github.com/JuliaStats/HypothesisTests.jl). It fills critical gaps in statistical analysis by providing robust support for:
 
