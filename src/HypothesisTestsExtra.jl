@@ -40,14 +40,16 @@ import HypothesisTests: VarianceFTest, ApproximateTwoSampleKSTest
 # ==============================================================================
 # Include source files
 # ==============================================================================
-include("welch.jl")
-include("fisherrxc.jl")
+include("NewTests/welch.jl")
+include("NewTests/fisherrxc.jl")
 include("PostHoc/posthoc_structures.jl")
 include("PostHoc/utils_cld.jl")
 include("PostHoc/posthoc_parametric.jl")
 include("PostHoc/posthoc_nonparametric.jl")
 include("PostHoc/posthoc_contingency.jl")
-include("dataframe_ext.jl")
+include("Dispatch/helpers.jl")
+include("Dispatch/dataframe_ext.jl")
+include("Dispatch/groupeddataframe_ext.jl")
 
 # ==============================================================================
 # Export new types and functions

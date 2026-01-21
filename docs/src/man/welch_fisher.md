@@ -1,4 +1,4 @@
-# Welch ANOVA & Fisher RxC Tests
+# Additional Test methods
 
 ## Welch's ANOVA
 
@@ -40,6 +40,24 @@ tbl = [10 5 2; 2 15 8; 1 4 20]
 
 # Automatically detects size and uses Monte Carlo
 test = FisherExactTestRxC(tbl)
+
+Fisher's Exact Test for RxC Tables (Monte Carlo)
+------------------------------------------------
+Population details:
+    parameter of interest:   P-value
+    value under h_0:         0.0
+    point estimate:          NaN
+    95% confidence interval: (0.3181, 0.3238)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    one-sided p-value:           0.3226
+
+Details:
+    contingency table (size (3, 3)):
+        10   5   2
+         2  15   8
+         1   4  20
 
 # Get p-value and Confidence Interval of the simulation
 pvalue(test; n_sim=100_000)
