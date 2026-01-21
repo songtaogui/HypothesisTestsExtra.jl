@@ -4,6 +4,10 @@ on:
     branches:
       - master
       - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
     tags: ['*']
   pull_request:
 
