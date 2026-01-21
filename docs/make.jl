@@ -12,7 +12,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Manual" => [
-            "Welch ANOVA & Fisher RxC" => "man/welch_fisher.md",
+            "Additional Test methods" => "man/welch_fisher.md",
             "Post-Hoc Analysis Guide" => "man/posthoc_theory.md",
             "DataFrame Integration" => "man/dataframes.md",
         ],
