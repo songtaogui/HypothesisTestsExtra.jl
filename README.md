@@ -10,7 +10,7 @@
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white
 [docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
 
-[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=main&style=for-the-badge&logo=Julia&logoColor=white&labelColor=black&color=C7E9C0
+[build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=master&style=for-the-badge&logo=Julia&logoColor=white&labelColor=black&color=C7E9C0
 [build-status-url]: https://github.com/jonathanBieler/BurrowsWheelerAligner.jl/actions/workflows/CI.yml?query=branch%3Amain
 
 [code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=D4B9DA&labelColor=black&color=purple
