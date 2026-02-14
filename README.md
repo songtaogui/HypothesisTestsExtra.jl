@@ -2,19 +2,21 @@
 
 ---
 
-| Documentation | Status | Meta Info |
-| :--- | :--- | :--- |
-| [![][docs-stable-img]][docs-stable-url] | [![][build-status-img]][build-status-url] | [![][License-img]][License-url] |
-| [![][docs-latest-img]][docs-latest-url] | [![][code-cov-img]][code-cov-url] | [![][Lifecycle-img]][Lifecycle-url] |
+<!-- Documentation & Status -->
+[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url]
 
-[License-img]: https://img.shields.io/badge/license-MIT-purple.svg?style=for-the-badge&logo=coursera&labelColor=purple&color=EFEDF5
-[License-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl?tab=MIT-1-ov-file
+[![][build-status-img]][build-status-url] [![][code-cov-img]][code-cov-url] [![][aqua-img]][aqua-url]
 
-[docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
-[docs-latest-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
+<!-- Meta Info -->
+[![][License-img]][License-url] [![][Lifecycle-img]][Lifecycle-url]
+
+---
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
 [docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
+
+[docs-latest-img]: https://img.shields.io/badge/docs-dev-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
+[docs-latest-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
 
 [build-status-img]: https://img.shields.io/github/actions/workflow/status/songtaogui/HypothesisTestsExtra.jl/CI.yml?branch=master&style=for-the-badge&logo=Julia&logoColor=white&labelColor=darkgreen&color=C7E9C0
 [build-status-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/actions/workflows/CI.yml?query=branch%3Amaster
@@ -22,9 +24,14 @@
 [code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=C7E9C0&labelColor=darkgreen&color=C7E9C0
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
 
-[Lifecycle-img]: https://img.shields.io/badge/lifecycle-wip-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
-[Lifecycle-url]: https://github.com/songtaogui/HypothesisTestsExtra.jl/releases
+[aqua-img]: https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%8A-CCEBC5?style=for-the-badge&logo=Julia&labelColor=darkgreen&logoColor=C7E9C0
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
+[License-img]: https://img.shields.io/badge/license-MIT-purple.svg?style=for-the-badge&logo=coursera&labelColor=purple&color=EFEDF5
+[License-url]: https://github.com/songtaogui.github.io/HypothesisTestsExtra.jl?tab=MIT-1-ov-file
+
+[Lifecycle-img]: https://img.shields.io/badge/lifecycle-wip-EFEDF5.svg?style=for-the-badge&logo=stagetimer&logoColor=white&labelColor=6A51A3
+[Lifecycle-url]: https://github.com/songtaogui.github.io/HypothesisTestsExtra.jl/releases
 
 ---
 
@@ -52,10 +59,10 @@ groups = [[1,2,3], [10,11,12], [5,6,7]]
 wt = WelchANOVATest(groups...)
 
 # 2. Post-Hoc Test with Tukey's HSD
-ph = PostHocTest(groups; method=:tukey, cld=true)
+ph = PostHocPar(groups; method=:tukey, cld=true)
 println(ph)
 
 # 3. DataFrame Support
 df = DataFrame(Group=["A","A","B","B"], Value=[1,2, 10,11])
-PostHocTest(df, :Group, :Value; method=:tukey)
+PostHocPar(df, :Group, :Value; method=:tukey)
 ```

@@ -1,3 +1,5 @@
+# test/test_core_api.jl
+
 @testset "Core API (Raw Arrays & Matrices)" begin
 
     # ==========================================================================
@@ -58,23 +60,23 @@
         # Dispatch check
         methods = [:tukey, :bonferroni, :lsd, :scheffe, :sidak, :tamhane, :lsd, :duncan]
         for m in methods
-            res = PostHocTest(groups; method=m)
+            res = PostHocPar(groups; method=m)
             @test res isa PostHocTestResult
             @test res.method == m
             @test length(res.comparisons) == 3
         end
 
         # CLD
-        res_cld = PostHocTest(groups; method=:tukey, cld=true)
+        res_cld = PostHocPar(groups; method=:tukey, cld=true)
         @test !isempty(res_cld.cld_letters)
 
         # Broadcast check
-        pha = PostHocTest(groups...) 
-        phb = PostHocTest(groups)
+        pha = PostHocPar(groups...) 
+        phb = PostHocPar(groups)
         @test pha.comparisons == phb.comparisons
 
         # Manual construction check
-        ph = PostHocTest(1:5, 1:5; cld = true)
+        ph = PostHocPar(1:5, 1:5; cld = true)
         tt = PostHocTestResult(ph.method, ph.comparisons, ph.alpha, ph.use_cld, ph.cld_letters, Dict{Int64, String}())
         df_tt = GroupTestToDataframe(tt)
         @test nrow(df_tt) == 2
@@ -133,6 +135,38 @@
         @test fisher_row isa PostHocTestResult
     end
 
+    # ==============================================================================
+    # Trend & Association Tests
+    # ==============================================================================
+    @testset "Trend & Association Tests" begin
+        # 1. Jonckheere-Terpstra
+        df_jt = DataFrame(
+            dose = categorical(["Low", "Low", "Med", "Med", "High", "High"], ordered=true),
+            resp = [1.2, 1.4, NaN, 2.5, 3.1, missing]
+        )
+        jt = JonckheereTerpstraTest(df_jt, :dose, :resp)
+        @test jt.n_total == 4 
+        @test jt.n_groups == 3
+    
+        # 2. Cochran-Armitage
+        df_ca = DataFrame(
+            dose = categorical(["Low", "Low", "Med", "Med", "High", "High"], ordered=true),
+            success = categorical([0, 0, 1, 0, 1, 1])
+        )
+        ca = CochranArmitageTest(df_ca, :dose, :success)
+        @test sum(ca.n_total) == 6
+    
+        # 3. Linear-by-Linear
+        df_lbl = DataFrame(
+            row = categorical(["L1", "L1", "L2", "L2", "L3", "L3"], ordered=true),
+            col = categorical(["C1", "C2", "C1", "C2", "C1", "C2"], ordered=true),
+            freq = [10, 5, 2, 8, 1, 15]
+        )
+        lbl = LinearByLinearTest(df_lbl, :row, :col, :freq)
+        @test lbl.n == sum(df_lbl.freq)
+    end
+
+
     # ==========================================================================
     # Misc
     # ==========================================================================
@@ -142,3 +176,4 @@
         @test_throws ErrorException HypothesisTestsExtra.adjust_pvalues(randP, :abc)
     end
 end
+

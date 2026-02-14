@@ -1,8 +1,5 @@
-# PostHoc/posthoc_structures.jl
+# src/PostHoc/types.jl
 
-# using DataFrames
-# using Printf
-# using PrettyTables
 
 # ==============================================================================
 # Post-hoc Structures
@@ -67,31 +64,122 @@ struct PostHocTestResult
     label_map::Dict{Int, String} 
 end
 
-"""
-    GroupTestToDataframe(res::PostHocTestResult)
 
-Get CLD (Compact Letter Display) labels of PostHocTestResult as a DataFrame.
-Returns columns: `GroupIndex`, `GroupLabel`, and `CLD`.
 """
-function GroupTestToDataframe(res::PostHocTestResult)
-    group_indices = collect(keys(res.label_map))
-    
-    if isempty(group_indices) && !isempty(res.cld_letters)
-        group_indices = collect(keys(res.cld_letters))
-    end
-    
-    sort!(group_indices)
-    
-    labels = [get(res.label_map, g, string(g)) for g in group_indices]
-    
-    letters = [get(res.cld_letters, g, "") for g in group_indices]
-    
-    return DataFrame(
-        GroupIndex = group_indices,
-        GroupLabel = labels,
-        CLD = letters
-    )
+    ContingencyCellTestResult
+
+Stores the results of post-hoc cell-wise analysis for contingency tables (e.g., Adjusted Standardized Residuals).
+
+# Fields
+- `method::Symbol`: The method used for cell analysis (e.g., `:asr` for Adjusted Standardized Residuals).
+- `adjust_method::Symbol`: P-value adjustment method for multiple comparisons (e.g., `:bonferroni`, `:fdr`).
+- `observed::Matrix{Int}`: The original matrix of observed counts.
+- `stats_matrix::Matrix{Float64}`: Matrix of test statistics (e.g., Z-scores for ASR or Odds Ratios).
+- `pvals_matrix::Matrix{Float64}`: Matrix of raw p-values.
+- `adj_pvals_matrix::Matrix{Float64}`: Matrix of adjusted p-values.
+- `sig_matrix::Matrix{Bool}`: Boolean matrix indicating significance at the given alpha level.
+- `alpha::Float64`: Significance level.
+- `row_labels::Vector{String}`: Labels for the rows of the contingency table.
+- `col_labels::Vector{String}`: Labels for the columns of the contingency table.
+"""
+struct ContingencyCellTestResult
+    method::Symbol
+    adjust_method::Symbol
+    observed::Matrix{Int}
+    stats_matrix::Matrix{Float64} # ASR or Odds Ratio
+    pvals_matrix::Matrix{Float64}
+    adj_pvals_matrix::Matrix{Float64}
+    sig_matrix::Matrix{Bool}
+    alpha::Float64
+    row_labels::Vector{String}
+    col_labels::Vector{String}
 end
+
+
+# Internal struct for passing data between algorithms
+struct StatData
+    k::Int
+    means::Vector{Float64}
+    vars::Vector{Float64}
+    ns::Vector{Int}
+    mse::Float64
+    df_resid::Float64
+    alpha::Float64
+    pairs::Vector{Tuple{Int, Int}} 
+end
+
+struct KWStatData
+    k::Int
+    n_total::Int
+    mean_ranks::Vector{Float64}
+    ns::Vector{Int}
+    tie_correction::Float64
+    alpha::Float64
+    pairs::Vector{Tuple{Int, Int}}
+end
+
+
+# Internal struct to pass data to algorithms
+struct ContingencyData
+    table::AbstractMatrix{Int}
+    pairs::Vector{Tuple{Int,Int}}
+    alpha::Float64
+end
+
+# Helper struct to return raw results from _run_ methods
+struct RawComparisonResult
+    r1::Int
+    r2::Int
+    stat::Float64
+    pval::Float64
+    note::String
+end
+
+
+function Base.show(io::IO, res::PostHocTestResult)
+    println(io, "")
+    println(io, repeat("-", 30))
+    println(io, "Post-hoc Test: :$(res.method) (alpha=$(res.alpha))")
+    println(io, repeat("-", 30))
+    
+    # Helper to get label or fallback to index
+    function get_label(idx::Int)
+        return get(res.label_map, idx, string(idx))
+    end
+
+    if res.use_cld && !isempty(res.cld_letters)
+        println(io, "\nCompact Letter Display (Means sorted descending):")
+        pretty_table(io, GroupTestToDataframe(res))
+    end
+
+    println(io, "\nPairwise Comparisons:")
+    pretty_table(io, DataFrame(res))
+end
+
+
+function Base.show(io::IO, res::ContingencyCellTestResult)
+    println(io, "")
+    println(io, repeat("=", 40))
+    println(io, "Post-hoc Cell Analysis: :$(res.method)")
+    println(io, "Adjustment: :$(res.adjust_method) (alpha=$(res.alpha))")
+    println(io, repeat("=", 40))
+    
+    stat_name = (res.method == :asr) ? "Z" : "OR"
+    
+    # Get DataFrame for display
+    display_df = CellTestToDataframe(res)
+    
+    println(io, "\nTable content: $stat_name (Significance*)")
+    
+    # Print DataFrame using PrettyTables
+    # Header is automatically taken from DataFrame column names
+    pretty_table(io, display_df; 
+        alignment = :c
+    )
+    
+    println(io, "\n* Significant at p < $(res.alpha) after correction.")
+end
+
 
 function DataFrames.DataFrame(res::PostHocTestResult)
     get_label(idx::Int) = get(res.label_map, idx, string(idx))
@@ -137,71 +225,6 @@ function DataFrames.DataFrame(res::PostHocTestResult)
     )
 end
 
-function Base.show(io::IO, res::PostHocTestResult)
-    println(io, "")
-    println(io, repeat("-", 30))
-    println(io, "Post-hoc Test: :$(res.method) (alpha=$(res.alpha))")
-    println(io, repeat("-", 30))
-    
-    # Helper to get label or fallback to index
-    function get_label(idx::Int)
-        return get(res.label_map, idx, string(idx))
-    end
-
-    if res.use_cld && !isempty(res.cld_letters)
-        println(io, "\nCompact Letter Display (Means sorted descending):")
-        pretty_table(io, GroupTestToDataframe(res))
-    end
-
-    println(io, "\nPairwise Comparisons:")
-    pretty_table(io, DataFrame(res))
-end
-
-# Internal struct for passing data between algorithms
-struct StatData
-    k::Int
-    means::Vector{Float64}
-    vars::Vector{Float64}
-    ns::Vector{Int}
-    mse::Float64
-    df_resid::Float64
-    alpha::Float64
-    pairs::Vector{Tuple{Int, Int}} 
-end
-
-"""
-    ContingencyCellTestResult
-
-Stores the results of post-hoc cell-wise analysis for contingency tables (e.g., Adjusted Standardized Residuals).
-
-# Fields
-- `method::Symbol`: The method used for cell analysis (e.g., `:asr` for Adjusted Standardized Residuals).
-- `adjust_method::Symbol`: P-value adjustment method for multiple comparisons (e.g., `:bonferroni`, `:fdr`).
-- `observed::Matrix{Int}`: The original matrix of observed counts.
-- `stats_matrix::Matrix{Float64}`: Matrix of test statistics (e.g., Z-scores for ASR or Odds Ratios).
-- `pvals_matrix::Matrix{Float64}`: Matrix of raw p-values.
-- `adj_pvals_matrix::Matrix{Float64}`: Matrix of adjusted p-values.
-- `sig_matrix::Matrix{Bool}`: Boolean matrix indicating significance at the given alpha level.
-- `alpha::Float64`: Significance level.
-- `row_labels::Vector{String}`: Labels for the rows of the contingency table.
-- `col_labels::Vector{String}`: Labels for the columns of the contingency table.
-"""
-struct ContingencyCellTestResult
-    method::Symbol
-    adjust_method::Symbol
-    observed::Matrix{Int}
-    stats_matrix::Matrix{Float64} # ASR or Odds Ratio
-    pvals_matrix::Matrix{Float64}
-    adj_pvals_matrix::Matrix{Float64}
-    sig_matrix::Matrix{Bool}
-    alpha::Float64
-    row_labels::Vector{String}
-    col_labels::Vector{String}
-end
-
-# ==============================================================================
-# ContingencyCellTestResult Extensions
-# ==============================================================================
 
 """
     DataFrames.DataFrame(res::ContingencyCellTestResult)
@@ -283,25 +306,29 @@ function CellTestToDataframe(res::ContingencyCellTestResult)
     return df
 end
 
-function Base.show(io::IO, res::ContingencyCellTestResult)
-    println(io, "")
-    println(io, repeat("=", 40))
-    println(io, "Post-hoc Cell Analysis: :$(res.method)")
-    println(io, "Adjustment: :$(res.adjust_method) (alpha=$(res.alpha))")
-    println(io, repeat("=", 40))
+
+"""
+    GroupTestToDataframe(res::PostHocTestResult)
+
+Get CLD (Compact Letter Display) labels of PostHocTestResult as a DataFrame.
+Returns columns: `GroupIndex`, `GroupLabel`, and `CLD`.
+"""
+function GroupTestToDataframe(res::PostHocTestResult)
+    group_indices = collect(keys(res.label_map))
     
-    stat_name = (res.method == :asr) ? "Z" : "OR"
+    if isempty(group_indices) && !isempty(res.cld_letters)
+        group_indices = collect(keys(res.cld_letters))
+    end
     
-    # Get DataFrame for display
-    display_df = CellTestToDataframe(res)
+    sort!(group_indices)
     
-    println(io, "\nTable content: $stat_name (Significance*)")
+    labels = [get(res.label_map, g, string(g)) for g in group_indices]
     
-    # Print DataFrame using PrettyTables
-    # Header is automatically taken from DataFrame column names
-    pretty_table(io, display_df; 
-        alignment = :c
+    letters = [get(res.cld_letters, g, "") for g in group_indices]
+    
+    return DataFrame(
+        GroupIndex = group_indices,
+        GroupLabel = labels,
+        CLD = letters
     )
-    
-    println(io, "\n* Significant at p < $(res.alpha) after correction.")
 end

@@ -4,8 +4,9 @@
 
 1.  **Heteroscedastic Data**: Welch's ANOVA for unequal variances.
 2.  **Complex Categorical Data**: Fisher's Exact Test for $R \times C$ tables via Monte Carlo simulation.
-3.  **Post-Hoc Analysis**: A comprehensive suite of pairwise comparison tools (Parametric, Non-Parametric, and Contingency tables) with support for Compact Letter Displays (CLD).
-4.  **DataFrames Integration**: Native support for passing `DataFrame` objects to both standard and new hypothesis tests.
+3.  **Extra Trend tests**: Cochran Armitage Test, Jonckheere Terpstra Test and Linear-By-Linear Test.
+4.  **Post-Hoc Analysis**: A comprehensive suite of pairwise comparison tools (Parametric, Non-Parametric, and Contingency tables) with support for Compact Letter Displays (CLD).
+5.  **DataFrames Integration**: Native support for passing `DataFrame` objects to both standard and new hypothesis tests.
 
 ## Installation
 
@@ -24,10 +25,10 @@ groups = [[1,2,3], [10,11,12], [5,6,7]]
 wt = WelchANOVATest(groups...)
 
 # 2. Post-Hoc Test with Tukey's HSD
-ph = PostHocTest(groups; method=:tukey, cld=true)
+ph = PostHocPar(groups; method=:tukey, cld=true)
 println(ph)
 
 # 3. DataFrame Support
 df = DataFrame(Group=["A","A","B","B"], Value=[1,2, 10,11])
-PostHocTest(df, :Group, :Value; method=:tukey)
+PostHocPar(df, :Group, :Value; method=:tukey)
 ```

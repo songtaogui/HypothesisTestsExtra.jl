@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Flattened Bell Curve -->
+  <path d="M10,85 C25,85 35,35 50,35 C65,35 75,85 90,85" stroke="#DDD" fill="none" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Right tail significance area -->
+  <path d="M70,61 C76,75 83,85 90,85 L70,85 Z" fill="#9558B2" fill-opacity="0.25"/>
+
+  <!-- Julia Dots: Size doubled (r=12), positions snapped to curve -->
+  <circle cx="50" cy="35" r="8" fill="#CB3C33" />
+  <circle cx="30" cy="61" r="8" fill="#389826" />
+  <circle cx="70" cy="61" r="8" fill="#9558B2" />
+
+  <!-- Plus Sign -->
+  <g stroke="#DDD" stroke-width="4" stroke-linecap="round">
+    <line x1="72" y1="20" x2="84" y2="20" />
+    <line x1="78" y1="14" x2="78" y2="26" />
+  </g>
+</svg>

@@ -1,4 +1,5 @@
-# HypothesisTestsExtra.jl
+# src/HypothesisTestsExtra.jl
+
 module HypothesisTestsExtra
 
 using Reexport
@@ -15,8 +16,10 @@ using PrettyTables
 import StatsAPI
 using StatsAPI
 using StatsAPI: HypothesisTest
+using StatsBase
 using Random
 using SpecialFunctions: logabsgamma
+using CategoricalArrays
 
 # ==============================================================================
 # Import functions to extend them
@@ -40,13 +43,10 @@ import HypothesisTests: VarianceFTest, ApproximateTwoSampleKSTest
 # ==============================================================================
 # Include source files
 # ==============================================================================
-include("NewTests/welch.jl")
+include("NewTests/welchanova.jl")
 include("NewTests/fisherrxc.jl")
-include("PostHoc/posthoc_structures.jl")
-include("PostHoc/utils_cld.jl")
-include("PostHoc/posthoc_parametric.jl")
-include("PostHoc/posthoc_nonparametric.jl")
-include("PostHoc/posthoc_contingency.jl")
+include("NewTests/trends.jl")
+include("PostHoc/posthoc.jl")
 include("Dispatch/helpers.jl")
 include("Dispatch/dataframe_ext.jl")
 include("Dispatch/groupeddataframe_ext.jl")
@@ -60,9 +60,10 @@ include("Dispatch/groupeddataframe_ext.jl")
 # New test functions
 export WelchANOVATest
 export FisherExactTestMC, FisherExactTestRxC
+export CochranArmitageTest, JonckheereTerpstraTest, LinearByLinearTest
 
 # PostHoc Related Export
-export PostHocTest, PostHocNonPar, PostHocContingencyRow, PostHocContingencyCell
+export PostHocPar, PostHocNonPar, PostHocContingencyRow, PostHocContingencyCell
 export PostHocTestResult, PostHocComparison, ContingencyCellTestResult
 export GroupTestToDataframe, CellTestToDataframe
 

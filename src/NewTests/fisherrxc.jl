@@ -1,4 +1,4 @@
-# fisherrxc.jl 
+# src/NewTests/fisherrxc.jl 
 
 function lgamma(x) logabsgamma(x)[1] end
 

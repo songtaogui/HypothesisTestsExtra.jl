@@ -1,115 +1,109 @@
 # Post-Hoc Analysis Guide
 
-Post-hoc tests are performed after a significant omnibus test (like ANOVA or Chi-Square) to determine *which* specific groups or categories differ. 
+Post-hoc tests (Multiple Comparison Procedures) are performed after a significant omnibus test (e.g., ANOVA, Kruskal-Wallis, or Chi-Square) to identify exactly which groups or cells differ significantly while controlling the overall Type I error rate.
 
 ## 1. Parametric Post-Hoc Tests
-**Function:** `PostHocTest`
+**Function:** `PostHocPar(groups; ...)`
 
-These methods assume normality. Choice depends on variance assumptions and the desired balance between Type I errors (False Positives) and Type II errors (False Negatives).
+Used when data is continuous and approximately normally distributed. These tests operate on group means.
+
+### Key Arguments
+- `method::Symbol`: The specific algorithm (see table below).
+- `alpha_levene::Float64`: Threshold for Levene's test. If $p < \alpha_{levene}$, a warning suggests switching to `:tamhane` due to heteroscedasticity.
+- `pairs::Vector{Tuple{Int, Int}}`: Optional. Define specific pairs to test (e.g., `[(1,2), (1,3)]`) instead of all-pairs.
+- `row_labels::Vector{String}`: Custom names for groups in the output.
+
+### Supported Methods
 
 | Method | Variance Assumption | Conservatism | Description |
 | :--- | :--- | :--- | :--- |
-| **:tukey** | Equal | Balanced | **Recommended default.** Controls FWER (Family-Wise Error Rate) exactly for all pairwise comparisons. Best for balanced designs. |
-| **:bonferroni**| Equal | Very High | Simple $\alpha / m$ correction. Can be overly conservative if the number of pairs is large. |
-| **:lsd** | Equal | Low | Fisher's Least Significant Difference. No correction applied. High power but high Type I error risk. Only use if ANOVA F-test is very strong. |
-| **:scheffe** | Equal | High | Designed for *any* linear contrast, not just pairwise. Very conservative for simple pairwise tests. |
-| **:sidak** | Equal | High | Slightly more powerful version of Bonferroni. |
-| **:tamhane** | **Unequal** | Balanced | **Use after Welch ANOVA.** Uses the T2 statistic and approximates degrees of freedom for every pair. Robust to heteroscedasticity. |
+| **:tukey** | Equal | Balanced | **Recommended default.** Tukey's HSD (Honest Significant Difference). Controls FWER for all-pairs. |
+| **:bonferroni**| Equal | Very High | Simple $\alpha / m$ adjustment. Very robust but loses power as the number of groups increases. |
+| **:lsd** | Equal | Very Low | Fisher's Least Significant Difference. No FWER correction. High power, high Type I error risk. |
+| **:scheffe** | Equal | Extreme | Controls FWER for *all possible* linear contrasts. Overly conservative for just pairwise tests. |
+| **:sidak** | Equal | High | Slightly more powerful than Bonferroni for independent comparisons. |
+| **:snk** | Equal | Moderate | Student-Newman-Keuls. A stepwise procedure. Less conservative than Tukey; does not strictly control FWER. |
+| **:duncan** | Equal | Low | Duncan's New Multiple Range Test. Higher power than SNK but higher false positive risk. |
+| **:tamhane** | **Unequal** | Balanced | **Use if Levene's test is significant.** Based on Welch's t-test with Sidak-like p-value adjustment. |
 
-### Example
-```julia
-# If Levene's test failed, use Tamhane:
-PostHocTest(groups; method=:tamhane)
-```
+---
 
 ## 2. Non-Parametric Post-Hoc Tests
-**Function:** `PostHocNonPar`
+**Function:** `PostHocNonPar(groups; ...)`
 
-Used when data is ordinal or normality is violated (e.g., after Kruskal-Wallis).
+Used for ordinal data or when normality is violated. These tests operate on the **ranks** of the pooled data. Ties in the data are automatically corrected.
 
-### Methods
-*   **:dunn_bonferroni** (Default): Uses rank sums (Z-scores) and adjusts p-values using Bonferroni.
-*   **:nemenyi**: The non-parametric equivalent of Tukey's HSD. Tests the difference in rank sums against a critical range from the Studentized Range distribution.
+### Supported Methods
+- **Dunn's Test Family** (Based on Z-scores of mean rank differences):
+    - `:dunn`: Unadjusted p-values (high power, no FWER control).
+    - `:dunn_bonferroni` (Default): Robust and standard for non-parametric post-hoc.
+    - `:dunn_sidak`: Slightly less conservative than Bonferroni.
+- **Nemenyi Test**:
+    - `:nemenyi`: The non-parametric analogue to Tukey’s HSD. Uses the Studentized Range distribution. Better for large, equal-sized samples.
+
+---
 
 ## 3. Contingency Table Post-Hoc
-**Functions:** `PostHocContingencyRow`, `PostHocContingencyCell`
+Designed for categorical data after a significant Pearson's Chi-Square test.
 
-When a Chi-Square test is significant, you need to know which rows or specific cells are driving the association.
+### A. Row-wise Comparison (`PostHocContingencyRow`)
+Compares the distribution of columns between pairs of rows (groups). 
+- **Methods**:
+    - `:chisq`: Standard $2 \times C$ Chi-Square test for each pair.
+    - `:fisher`: Exact test. For $2 \times 2$ sub-tables, provides exact p-values; for $2 \times C$, uses Monte Carlo simulation.
+- **CLD Support**: If `cld=true`, groups are ordered and labeled based on the proportions in the first column of the table.
 
-### A. Row-wise Comparisons (`PostHocContingencyRow`)
-Compares distributions between pairs of rows (groups).
-*   **Method `:chisq`**: Performs a $2 \times C$ Chi-square test for every pair of rows.
-*   **Method `:fisher`**: Performs a $2 \times C$ Fisher test for every pair.
-*   **Adjustment**: P-values are adjusted (e.g., Bonferroni, FDR) to account for multiple testing.
+### B. Cell-wise Analysis (`PostHocContingencyCell`)
+Identifies which specific cells (intersections) are significant drivers of the association.
+- **Methods**:
+    - `:asr` (Adjusted Standardized Residuals): Returns Z-scores. If $|Z| > 1.96$ (for $\alpha=0.05$), the cell count is significantly different from what is expected under independence.
+    - `:fisher_1vsall`: Performs a "one-vs-rest" Fisher's Exact test for every cell, returning Odds Ratios.
+- **P-Value Adjustments**: Supports `:bonferroni`, `:bh` (Benjamini-Hochberg for FDR), and `:none`.
 
-### B. Cell-wise Residuals (`PostHocContingencyCell`)
-Identifies specific cells that are over- or under-represented.
-*   **Method `:asr` (Adjusted Standardized Residuals)**: Calculates the residual $r_{ij} = (O - E) / \sqrt{E(1-row\%)(1-col\%)}$.
-    *   If $|r_{ij}| > Z_{\alpha/2}$ (approx 1.96 for $\alpha=0.05$), the cell is significant.
-    *   Provides a detailed breakdown of which specific intersection (Row $\times$ Col) deviates from independence.
+---
 
-## Compact Letter Display (CLD)
-All group-level post-hoc tests support `cld=true`. This generates a string representation where groups sharing the same letter are **not** significantly different.
+## 4. Compact Letter Display (CLD)
+The `cld=true` argument simplifies complex pairwise results. Groups assigned the **same letter** are **not** significantly different.
 
+### Example: Non-Parametric with CLD
 ```julia
-# 3 groups with different distributions
-  g1 = rand(10)
-  g2 = rand(10) .+ 2
-  g3 = rand(10) .+ 0.5
-  
-# Perform Dunn's test with Bonferroni correction and generate CLD letters
-result = PostHocNonPar([g1, g2, g3]; method=:dunn_bonferroni, cld=true, row_labels=["Ctrl", "TrtA", "TrtB"])
+using HypothesisTestsExtra
+
+# 3 groups of observations
+g1, g2, g3 = [rand(10), rand(10) .+ 2, rand(10) .+ 0.5]
+
+# Perform test
+result = PostHocNonPar([g1, g2, g3]; 
+                       method=:dunn_bonferroni, 
+                       cld=true, 
+                       row_labels=["Control", "High_Dose", "Low_Dose"])
+
+# Extract as DataFrame
+df_letters = GroupTestToDataframe(result)
+println(df_letters)
 ```
 
+**Interpretation of Output:**
+- If "Control" is `b` and "High_Dose" is `a`, they are significantly different.
+- If "Low_Dose" is `ab`, it is not significantly different from either "Control" or "High_Dose".
 
-You will get:
+---
 
-```plain
-------------------------------
-Post-hoc Test: :dunn_bonferroni (alpha=0.05)
-------------------------------
+## 5. Summary of Common Arguments
 
-Compact Letter Display (Means sorted descending):
-┌────────────┬────────────┬────────┐
-│ GroupIndex │ GroupLabel │    CLD │
-│      Int64 │     String │ String │
-├────────────┼────────────┼────────┤
-│          1 │       Ctrl │      b │
-│          2 │       TrtA │      a │
-│          3 │       TrtB │      b │
-└────────────┴────────────┴────────┘
+| Argument | Type | Default | Impact |
+| :--- | :--- | :--- | :--- |
+| `alpha` | `Float64` | `0.05` | Target significance level for tests and Confidence Intervals. |
+| `cld` | `Bool` | `false` | Whether to calculate the letter-based grouping display. |
+| `pairs` | `Vector{Tuple}` | `nothing` | Restricts comparisons to specific indices (reduces alpha inflation). |
+| `adjustment` | `Symbol` | `:bonferroni` | P-value correction method (used in Contingency tests). |
+| `row_labels` | `Vector{Str}` | `[]` | Used for both the main results table and the CLD display. |
 
-Pairwise Comparisons:
-┌─────────────┬─────────┬─────────┬─────────┬──────────┬────────────┬───────────┬───────────┬────────┬─────────────────┐
-│    Contrast │    Diff │ Std.Err │    Stat │ Critical │    P-value │ Lower 95% │ Upper 95% │    Sig │            Note │
-│      String │ Float64 │ Float64 │ Float64 │  Float64 │    Float64 │   Float64 │   Float64 │ String │          String │
-├─────────────┼─────────┼─────────┼─────────┼──────────┼────────────┼───────────┼───────────┼────────┼─────────────────┤
-│ Ctrl - TrtA │   -19.6 │   3.937 │  4.9784 │  2.39398 │ 1.92331e-6 │  -29.0251 │  -10.1749 │      * │ Adj: Bonferroni │
-│ Ctrl - TrtB │    -9.2 │   3.937 │  2.3368 │  2.39398 │  0.0583484 │  -18.6251 │  0.225108 │        │ Adj: Bonferroni │
-│ TrtA - TrtB │    10.4 │   3.937 │  2.6416 │  2.39398 │  0.0247544 │  0.974892 │   19.8251 │      * │ Adj: Bonferroni │
-└─────────────┴─────────┴─────────┴─────────┴──────────┴────────────┴───────────┴───────────┴────────┴─────────────────┘
-```
-
-You can then use `GroupTestToDataframe` to get DataFrame of CLD:
+### Accessing Results
+You can convert any `PostHocTestResult` object to a standard Julia DataFrame for further analysis or export:
 ```julia
-julia> GroupTestToDataframe(result)
-3×3 DataFrame
- Row │ GroupIndex  GroupLabel  CLD    
-     │ Int64       String      String 
-─────┼────────────────────────────────
-   1 │          1  Ctrl        b
-   2 │          2  TrtA        a
-   3 │          3  TrtB        b
+using DataFrames
+full_table = DataFrame(result)      # Detailed pairwise statistics
+cld_table = GroupTestToDataframe(result) # Only group labels and letters
 ```
 
-You can get the PostHoc Details use `DataFrame`:
-```julia
-julia> DataFrame(result)
-3×10 DataFrame
- Row │ Contrast     Diff     Std.Err  Stat     Critical  P-value     Lower 95%   Upper 95%   Sig     Note            
-     │ String       Float64  Float64  Float64  Float64   Float64     Float64     Float64     String  String          
-─────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ Ctrl - TrtA    -19.6    3.937   4.9784   2.39398  1.92331e-6  -29.0251    -10.1749    *       Adj: Bonferroni
-   2 │ Ctrl - TrtB     -9.2    3.937   2.3368   2.39398  0.0583484   -18.6251      0.225108          Adj: Bonferroni
-   3 │ TrtA - TrtB     10.4    3.937   2.6416   2.39398  0.0247544     0.974892   19.8251    *       Adj: Bonferroni
-```
