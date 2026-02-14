@@ -18,6 +18,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Manual" => [
+            "Quick start" => "man/getstarted.md",
             "Additional Test methods" => "man/newtests.md",
             "Post-Hoc Analysis Guide" => "man/posthoc_theory.md",
             "DataFrame Integration" => "man/dataframes.md",
