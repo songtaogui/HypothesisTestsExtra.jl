@@ -67,7 +67,6 @@ HypothesisTests.ChisqTest(::GroupedDataFrame, ::Symbol)
 HypothesisTests.FisherExactTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.FisherExactTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 HypothesisTests.FisherExactTest(::GroupedDataFrame, ::Symbol)
-HypothesisTests.FisherExactTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 
 HypothesisTests.PowerDivergenceTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.PowerDivergenceTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)

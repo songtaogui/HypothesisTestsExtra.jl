@@ -30,6 +30,34 @@ A smart constructor that acts as a drop-in replacement for Fisher's Exact Test.
   (calculating the exact p-value deterministically and supporting Odds Ratio CI).
 - If `tbl` is **RxC** (where R>2 or C>2), it returns a `FisherExactTestMC` object 
   (estimating the p-value via Monte Carlo simulation).
+
+Implements: `pvalue`, `confint`
+
+## pvalue
+
+`pvalue(x::FisherExactTestMC; n_sim::Int=100_000, burnin::Int=10000)`
+
+Estimate the p-value using Monte Carlo simulation for RxC tables.
+The estimate uses the add-one smoothing rule: (k + 1) / (N + 1).
+
+## confint
+
+`confint(x::FisherExactTestMC; level::Float64=0.95, n_sim::Int=100_000, burnin::Int=10000)`
+
+Compute the confidence interval for the **estimated p-value** obtained via Monte Carlo simulation.
+
+Since the p-value for RxC tables is estimated stochastically, this function returns the 
+confidence interval reflecting the Monte Carlo sampling error (using the Normal approximation 
+of the Binomial proportion).
+
+Arguments:
+- `level`: The confidence level (default 0.95).
+- `n_sim`: Number of Monte Carlo simulations.
+- `burnin`: Number of burn-in steps for the Markov Chain.
+
+Returns:
+- A tuple `(lower, upper)` representing the confidence interval for the p-value.
+
 """
 function FisherExactTestRxC(tbl::AbstractMatrix{<:Integer})
     r, c = size(tbl)
@@ -89,34 +117,12 @@ function _simulate_fisher_mc(x::FisherExactTestMC, n_sim::Int, burnin::Int)
     return count_extreme
 end
 
-"""
-    pvalue(x::FisherExactTestMC; n_sim::Int=100_000, burnin::Int=10000)
-
-Estimate the p-value using Monte Carlo simulation for RxC tables.
-The estimate uses the add-one smoothing rule: (k + 1) / (N + 1).
-"""
 function StatsAPI.pvalue(x::FisherExactTestMC; n_sim::Int=100_000, burnin::Int=10000)
     count_extreme = _simulate_fisher_mc(x, n_sim, burnin)
     return (count_extreme + 1) / (n_sim + 1)
 end
 
-"""
-    confint(x::FisherExactTestMC; level::Float64=0.95, n_sim::Int=100_000, burnin::Int=10000)
 
-Compute the confidence interval for the **estimated p-value** obtained via Monte Carlo simulation.
-
-Since the p-value for RxC tables is estimated stochastically, this function returns the 
-confidence interval reflecting the Monte Carlo sampling error (using the Normal approximation 
-of the Binomial proportion).
-
-Arguments:
-- `level`: The confidence level (default 0.95).
-- `n_sim`: Number of Monte Carlo simulations.
-- `burnin`: Number of burn-in steps for the Markov Chain.
-
-Returns:
-- A tuple `(lower, upper)` representing the confidence interval for the p-value.
-"""
 function StatsAPI.confint(x::FisherExactTestMC; level::Float64=0.95, n_sim::Int=100_000, burnin::Int=10000)
     # Warn the user that this CI is for the p-value estimate, not the Odds Ratio.
     # @warn "The returned confidence interval for FisherExactTestMC reflects the sampling error of the Monte Carlo simulation for the P-value. It does not represent a confidence interval for an effect size measure (such as the Odds Ratio)."

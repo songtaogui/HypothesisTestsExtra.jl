@@ -43,6 +43,8 @@ Perform the Cochran-Armitage test for trend in proportions.
 - `total`: Vector of total counts for each level.
 - `scores`: `:equidistant` (default), `:midrank`, or a `Vector{Float64}`.
 
+Implements: `pvalue`, `confint`
+
 # Example
 ```julia
 success = [10, 15, 25]
@@ -115,6 +117,8 @@ end
 
 Perform the Jonckheere-Terpstra test for monotonic trend among k independent samples.
 Includes correction for ties in the data.
+
+Implements: `pvalue`
 
 # Example
 ```julia
@@ -190,6 +194,11 @@ end
 
 Perform the Linear-by-Linear Association test for RxC contingency tables.
 
+Implements: `pvalue`, `confint`
+
+`confint(t::LinearByLinearTest; level=0.95)`: Returns the confidence interval for the Pearson correlation coefficient `r` 
+using Fisher's Z-transformation.
+
 # Example
 ```julia
 tbl = [10 5 2; 3 8 12; 1 2 15]
@@ -242,12 +251,7 @@ HypothesisTests.population_param_of_interest(t::LinearByLinearTest) = ("Pearson 
 
 StatsAPI.pvalue(t::LinearByLinearTest) = pvalue(Chisq(1), t.M2; tail=:right)
 
-"""
-    confint(t::LinearByLinearTest; level=0.95)
 
-Returns the confidence interval for the Pearson correlation coefficient `r` 
-using Fisher's Z-transformation.
-"""
 function StatsAPI.confint(t::LinearByLinearTest; level::Float64=0.95)
     # Fisher Z-transform
     z = 0.5 * log((1 + t.r) / (1 - t.r))
