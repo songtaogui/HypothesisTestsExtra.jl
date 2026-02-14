@@ -63,7 +63,6 @@ Supports raw data (two columns) or aggregated frequency data (three columns).
 HypothesisTests.ChisqTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.ChisqTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 HypothesisTests.ChisqTest(::GroupedDataFrame, ::Symbol)
-HypothesisTests.ChisqTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 
 HypothesisTests.FisherExactTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.FisherExactTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
@@ -73,12 +72,10 @@ HypothesisTests.FisherExactTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 HypothesisTests.PowerDivergenceTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.PowerDivergenceTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 HypothesisTests.PowerDivergenceTest(::GroupedDataFrame, ::Symbol)
-HypothesisTests.PowerDivergenceTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 
 FisherExactTestRxC(::DataFrame, ::Symbol, ::Symbol)
 FisherExactTestRxC(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 FisherExactTestRxC(::GroupedDataFrame, ::Symbol)
-FisherExactTestRxC(::GroupedDataFrame, ::Symbol, ::Symbol)
 ```
 
 ### K-Sample & Variance Tests
@@ -131,7 +128,6 @@ These methods require ordered categorical data where appropriate (e.g., Jonckhee
 CochranArmitageTest(::DataFrame, ::Symbol, ::Symbol)
 CochranArmitageTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 CochranArmitageTest(::GroupedDataFrame, ::Symbol)
-CochranArmitageTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 
 JonckheereTerpstraTest(::DataFrame, ::Symbol, ::Symbol)
 JonckheereTerpstraTest(::GroupedDataFrame, ::Symbol)
@@ -139,5 +135,4 @@ JonckheereTerpstraTest(::GroupedDataFrame, ::Symbol)
 LinearByLinearTest(::DataFrame, ::Symbol, ::Symbol)
 LinearByLinearTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 LinearByLinearTest(::GroupedDataFrame, ::Symbol)
-LinearByLinearTest(::GroupedDataFrame, ::Symbol, ::Symbol)
 ```

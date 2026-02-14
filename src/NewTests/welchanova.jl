@@ -15,7 +15,7 @@ equal variances (homoscedasticity) is violated.
 
 The test statistic is approximately F-distributed.
 
-Implements: [`pvalue`](@ref)
+Implements: [`pvalue`](@extref StatsAPI.pvalue)
 
 # Example
 
