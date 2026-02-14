@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "HypothesisTestsExtra.jl"
-  text: "An extension library for `HypothesisTests.jl`, including Post-Hoc Analyses, additional hypothesis tests and DataFrame dispatches."
+  text: "Post-Hoc Analyses and additional tests for HypothesisTests.jl."
   tagline:
   image:
     src: /logo.svg

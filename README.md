@@ -3,14 +3,17 @@
 ---
 
 <!-- Documentation & Status -->
-[![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url]
+[![][docs-online-img]][docs-online-url] [![][aqua-img]][aqua-url]
 
-[![][build-status-img]][build-status-url] [![][code-cov-img]][code-cov-url] [![][aqua-img]][aqua-url]
+[![][build-status-img]][build-status-url] [![][code-cov-img]][code-cov-url] 
 
 <!-- Meta Info -->
 [![][License-img]][License-url] [![][Lifecycle-img]][Lifecycle-url]
 
 ---
+
+[docs-online-img]: https://img.shields.io/badge/docs-online-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
+[docs-online-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
 [docs-stable-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/
@@ -24,7 +27,7 @@
 [code-cov-img]: https://img.shields.io/codecov/c/github/songtaogui/HypothesisTestsExtra.jl?token=DYlPBrm49f&style=for-the-badge&logo=Codecov&logoColor=C7E9C0&labelColor=darkgreen&color=C7E9C0
 [code-cov-url]: https://codecov.io/github/songtaogui/HypothesisTestsExtra.jl
 
-[aqua-img]: https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%8A-CCEBC5?style=for-the-badge&logo=Julia&labelColor=darkgreen&logoColor=C7E9C0
+[aqua-img]: https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%8A-DEEBF7?style=for-the-badge&logo=Julia&&labelColor=black&logoColor=white
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
 [License-img]: https://img.shields.io/badge/license-MIT-purple.svg?style=for-the-badge&logo=coursera&labelColor=purple&color=EFEDF5
