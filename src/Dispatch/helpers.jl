@@ -133,15 +133,22 @@ function _pivot_freq_table(gd::GroupedDataFrame, col_col::Symbol, freq_col::Unio
     c_labels = string.(c_labels_raw)
     c_map = Dict(val => i for (i, val) in enumerate(c_labels_raw))
     r_labels = [_format_group_key(key) for key in keys(gd)]
-    T = isnothing(freq_col) ? Int : Float64
+
+    if isnothing(freq_col)
+         T = Int
+    else
+         T = nonmissingtype(eltype(parent_df[!, freq_col]))
+         @assert T <: Int "The freq values should be Int for col : $(freq_col)"
+    end
+
     data_mat = zeros(T, length(gd), length(c_labels))
-    
+
     for (i, subdf) in enumerate(gd)
         if isnothing(freq_col)
             clean_col = _get_clean_data(subdf[!, col_col])
             for val in clean_col
                 if haskey(c_map, val)
-                    data_mat[i, c_map[val]] += 1
+                    data_mat[i, c_map[val]] += one(T)
                 end
             end
         else
@@ -149,12 +156,13 @@ function _pivot_freq_table(gd::GroupedDataFrame, col_col::Symbol, freq_col::Unio
             for row in eachrow(sub_clean)
                 val = row[col_col]
                 if haskey(c_map, val)
-                    data_mat[i, c_map[val]] += row[freq_col]
+                    data_mat[i, c_map[val]] += convert(T, row[freq_col])
                 end
             end
         end
     end
-    
+
     return NamedArray(data_mat, (r_labels, c_labels), ("Group", string(col_col)))
 end
+
 

@@ -123,4 +123,71 @@
         @test FisherExactTest(df_cat, :r, :c) isa FisherExactTest
         @test FisherExactTest(df_freq, :r, :c, :n) isa FisherExactTest
     end
+
+    # --- Trend and Association Tests ---
+    @testset "Trend & Association - DF" begin
+        # Jonckheere-Terpstra
+        df_jt = DataFrame(
+            grp = categorical(vcat(fill("L1", 10), fill("L2", 10), fill("L3", 10)); ordered=true),
+            val = vcat(randn(10) .- 1, randn(10), randn(10) .+ 1)
+        )
+        @test JonckheereTerpstraTest(df_jt, :grp, :val) isa JonckheereTerpstraTest
+
+        # Cochran-Armitage (raw)
+        df_ca = DataFrame(
+            dose = categorical(vcat(fill("Low", 20), fill("Mid", 20), fill("High", 20)); ordered=true),
+            resp = categorical(vcat(rand(["No", "Yes"], 20), rand(["No", "Yes"], 20), rand(["No", "Yes"], 20)))
+        )
+        @test CochranArmitageTest(df_ca, :dose, :resp) isa CochranArmitageTest
+
+        # Cochran-Armitage (freq)
+        df_ca_freq = DataFrame(
+            dose = categorical(repeat(["Low", "Mid", "High"], inner=2); ordered=true),
+            resp = categorical(repeat(["No", "Yes"], 3)),
+            n = [8, 12, 10, 10, 6, 14]
+        )
+        @test CochranArmitageTest(df_ca_freq, :dose, :resp, :n) isa CochranArmitageTest
+
+        # Linear-by-Linear (raw)
+        df_lbl = DataFrame(
+            x = categorical(vcat(fill("L1", 20), fill("L2", 20), fill("L3", 20)); ordered=true),
+            y = categorical(rand(["S", "M", "L"], 60); ordered=true)
+        )
+        @test LinearByLinearTest(df_lbl, :x, :y) isa LinearByLinearTest
+
+        # Linear-by-Linear (freq)
+        df_lbl_freq = DataFrame(
+            x = categorical(repeat(["L1", "L2", "L3"], inner=3); ordered=true),
+            y = categorical(repeat(["S", "M", "L"], 3); ordered=true),
+            n = [5, 8, 7, 6, 9, 5, 4, 7, 10]
+        )
+        @test LinearByLinearTest(df_lbl_freq, :x, :y, :n) isa LinearByLinearTest
+    end
+
+    # --- One-Sample Tests ---
+    @testset "One-Sample - DF" begin
+        df_one = DataFrame(x = randn(30))
+        @test OneSampleTTest(df_one, :x) isa OneSampleTTest
+        @test OneSampleZTest(df_one, :x) isa OneSampleZTest
+        @test SignTest(df_one, :x) isa SignTest
+        @test SignedRankTest(df_one, :x) isa ExactSignedRankTest
+
+        df_bin_bool = DataFrame(x = rand([true, false], 40))
+        df_bin_num = DataFrame(x = rand(0:1, 40))
+        df_bin_str = DataFrame(x = rand(["a", "b"], 40))
+        @test BinomialTest(df_bin_bool, :x) isa BinomialTest
+        @test BinomialTest(df_bin_num, :x) isa BinomialTest
+        @test BinomialTest(df_bin_str, :x) isa BinomialTest
+    end
+
+    # --- Paired/Binary-group Wrappers ---
+    @testset "Paired Wrappers - DF" begin
+        df_pair = DataFrame(
+            g = categorical(vcat(fill("A", 15), fill("B", 15))),
+            x = randn(30)
+        )
+        @test SignTest(df_pair, :g, :x) isa SignTest
+        @test SignedRankTest(df_pair, :g, :x) isa ExactSignedRankTest
+    end
+
 end

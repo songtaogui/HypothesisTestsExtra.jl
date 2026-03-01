@@ -52,7 +52,7 @@
     @testset "Categorical Tests - GD" begin
         @test ChisqTest(gd_cat, :col) isa PowerDivergenceTest
         @test FisherExactTest(gd_2x2, :col) isa FisherExactTest
-        @test FisherExactTestRxC(gd_cat, :col) isa FisherExactTestMC
+        @test FisherExactTestRxC(gd_cat, :col) isa FisherExactTestRxC
         @test PowerDivergenceTest(gd_cat, :col) isa PowerDivergenceTest
     end
 
@@ -77,5 +77,40 @@
 
         # Expect error if GD has more than 2 groups
         @test_throws ArgumentError EqualVarianceTTest(gd_3, :x)
+    end
+
+    # --- Frequency Variants for Categorical/PostHoc ---
+    @testset "Frequency Variants - GD" begin
+        df_cat_freq = combine(groupby(df_cat, [:row, :col]), nrow => :n)
+        gd_cat_freq = groupby(df_cat_freq, :row)
+
+        @test PostHocContingencyRow(gd_cat_freq, :col, :n) isa PostHocTestResult
+        @test PostHocContingencyCell(gd_cat_freq, :col, :n) isa ContingencyCellTestResult
+        @test ChisqTest(gd_cat_freq, :col, :n) isa PowerDivergenceTest
+        @test FisherExactTestRxC(gd_cat_freq, :col, :n) isa FisherExactTestRxC
+        @test PowerDivergenceTest(gd_cat_freq, :col, :n) isa PowerDivergenceTest
+    end
+
+    # --- Trend and Association Tests ---
+    @testset "Trend & Association - GD" begin
+        # Ordered grouped keys for trend tests
+        df_ord = DataFrame(
+            dose = categorical(vcat(fill("Low", 20), fill("Mid", 20), fill("High", 20)); ordered=true),
+            y = randn(60),
+            resp = categorical(rand(["No", "Yes"], 60)),
+            ord_col = categorical(rand(["L1", "L2", "L3"], 60); ordered=true)
+        )
+        gd_ord = groupby(df_ord, :dose)
+
+        @test JonckheereTerpstraTest(gd_ord, :y) isa JonckheereTerpstraTest
+        @test CochranArmitageTest(gd_ord, :resp) isa CochranArmitageTest
+        @test LinearByLinearTest(gd_ord, :ord_col) isa LinearByLinearTest
+
+        # Frequency variants
+        df_ord_freq = combine(groupby(df_ord, [:dose, :resp, :ord_col]), nrow => :n)
+        gd_ord_freq = groupby(df_ord_freq, :dose)
+
+        @test CochranArmitageTest(gd_ord_freq, :resp, :n) isa CochranArmitageTest
+        @test LinearByLinearTest(gd_ord_freq, :ord_col, :n) isa LinearByLinearTest
     end
 end

@@ -1,0 +1,1070 @@
+#FILEPATH: ./dataframe_ext.jl
+# src/Dispatch/dataframe_ext.jl
+
+# ==============================================================================
+# Extension: Post-hoc Tests (DataFrame)
+# ==============================================================================
+
+"""
+    PostHocNonPar(df::DataFrame, group_col::Symbol, data_col::Symbol; kwargs...)
+Non-parametric post-hoc (e.g., Dunn). 
+Type requirements: `group_col` (Categorical), `data_col` (Numeric or Ordered).
+"""
+function PostHocNonPar(df::DataFrame, group_col::Symbol, data_col::Symbol; kwargs...)
+    _validate_columns(df, group_col => :categorical)
+    # data_col can be numeric or ordered
+    _assert_requirement(_is_numeric(df[!, data_col]) || _is_ordered(df[!, data_col]), "Column :$data_col must be numeric or ordered.")
+    
+    force_num = _is_ordered(df[!, data_col])
+    groups, labels = _extract_groups_with_labels(df, group_col, data_col; force_numeric_data=force_num)
+    return PostHocNonPar(groups; row_labels=labels, kwargs...)
+end
+
+
+"""
+    PostHocPar(df::DataFrame, group_col::Symbol, data_col::Symbol; kwargs...)
+Parametric post-hoc (e.g., Tukey). 
+Type requirements: `group_col` (Categorical), `data_col` (Numeric).
+"""
+function PostHocPar(df::DataFrame, group_col::Symbol, data_col::Symbol; kwargs...)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, labels = _extract_groups_with_labels(df, group_col, data_col)
+    return PostHocPar(groups; row_labels=labels, kwargs...)
+end
+
+# --- Contingency Table Post-Hoc: Raw Data ---
+
+"""
+    PostHocContingencyRow(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+
+Perform row-wise post-hoc comparisons (e.g., Chi-Sq or Fisher) on raw categorical data.
+"""
+function PostHocContingencyRow(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    return PostHocContingencyRow(tbl; kwargs...)
+end
+
+"""
+    PostHocContingencyCell(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+
+Perform cell-level post-hoc analysis (e.g., ASR) on raw categorical data.
+"""
+function PostHocContingencyCell(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    return PostHocContingencyCell(tbl; kwargs...)
+end
+
+# --- Contingency Table Post-Hoc: Frequency Data ---
+
+"""
+    PostHocContingencyRow(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform row-wise post-hoc comparisons on aggregated frequency data (Long format).
+"""
+function PostHocContingencyRow(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    return PostHocContingencyRow(tbl; kwargs...)
+end
+
+"""
+    PostHocContingencyCell(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform cell-level post-hoc analysis on aggregated frequency data (Long format).
+"""
+function PostHocContingencyCell(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    return PostHocContingencyCell(tbl; kwargs...)
+end
+
+# ==============================================================================
+# Extension: Standard Categorical Tests (DataFrame)
+# ==============================================================================
+
+"""
+    ChisqTest(df::DataFrame, row_col::Symbol, col_col::Symbol)
+
+Compute Pearson's Chi-square test from a raw DataFrame.
+"""
+function HypothesisTests.ChisqTest(df::DataFrame, row_col::Symbol, col_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    _assert_requirement(all(size(tbl) .>= 2), "ChisqTest requires at least 2x2 table.")
+    return HypothesisTests.ChisqTest(tbl)
+end
+
+function HypothesisTests.ChisqTest(tbl::NamedMatrix) HypothesisTests.ChisqTest(tbl.array) end
+
+"""
+    ChisqTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+
+Compute Pearson's Chi-square test from aggregated frequency data.
+"""
+function HypothesisTests.ChisqTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    return ChisqTest(tbl)
+end
+
+"""
+    FisherExactTest(tbl::AbstractMatrix{<:Integer})
+
+Compute Fisher's Exact Test from a ct (2x2 only).
+"""
+function HypothesisTests.FisherExactTest(tbl::AbstractMatrix{<:Integer})
+    r, c = size(tbl)
+    if r != 2 || c != 2
+        error("FisherExactTest currently only supports 2x2 tables. Found $(r)x$(c).")
+    end
+    return FisherExactTest(vec(tbl')...)
+end
+
+"""
+    FisherExactTest(df::DataFrame, row_col::Symbol, col_col::Symbol)
+
+Compute Fisher's Exact Test from a raw DataFrame (2x2 only).
+"""
+function HypothesisTests.FisherExactTest(df::DataFrame, row_col::Symbol, col_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    _assert_requirement(size(tbl) == (2, 2), "FisherExactTest requires a 2x2 table.")
+    return FisherExactTest(vec(tbl')...)
+end
+
+"""
+    FisherExactTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+
+Compute Fisher's Exact Test from aggregated frequency data (2x2 only).
+"""
+function HypothesisTests.FisherExactTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    _assert_requirement(size(tbl) == (2, 2), "FisherExactTest requires a 2x2 table.")
+    return FisherExactTest(vec(tbl')...)
+end
+
+"""
+    FisherExactTestRxC(df::DataFrame, row_col::Symbol, col_col::Symbol)
+
+Compute Fisher's Exact Test for general RxC tables from a raw DataFrame.
+"""
+function FisherExactTestRxC(df::DataFrame, row_col::Symbol, col_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    return FisherExactTestRxC(tbl)
+end
+
+"""
+    FisherExactTestRxC(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+
+Compute Fisher's Exact Test (RxC) from aggregated frequency data.
+"""
+function FisherExactTestRxC(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    return FisherExactTestRxC(tbl)
+end
+
+"""
+    PowerDivergenceTest(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+
+Compute Power Divergence Test from a raw DataFrame.
+"""
+function HypothesisTests.PowerDivergenceTest(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    _assert_requirement(
+        size(tbl) == (2, 2), 
+        "PowerDivergenceTest requires a 2x2 table.")
+    return PowerDivergenceTest(tbl; kwargs...)
+end
+
+"""
+    PowerDivergenceTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Compute Power Divergence Test from aggregated frequency data.
+"""
+function HypothesisTests.PowerDivergenceTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    _assert_requirement(size(tbl) == (2, 2), "PowerDivergenceTest requires a 2x2 table.")
+    return PowerDivergenceTest(tbl; kwargs...)
+end
+
+# ==============================================================================
+# Extension: K-Sample & Variance Tests (DataFrame)
+# ==============================================================================
+
+"""
+    OneWayANOVATest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform One-Way ANOVA on a DataFrame.
+"""
+function HypothesisTests.OneWayANOVATest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col)
+    return OneWayANOVATest(groups...)
+end
+
+"""
+    WelchANOVATest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Welch's ANOVA on a DataFrame.
+"""
+function WelchANOVATest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col)
+    return WelchANOVATest(groups...)
+end
+
+"""
+    KruskalWallisTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Kruskal-Wallis Rank Sum Test on a DataFrame.
+"""
+function HypothesisTests.KruskalWallisTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical)
+    _assert_requirement(_is_numeric(df[!, data_col]) || _is_ordered(df[!, data_col]), "KruskalWallis requires numeric or ordered DV.")
+    
+    force_num = _is_ordered(df[!, data_col])
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col; force_numeric_data=force_num)
+    return KruskalWallisTest(groups...)
+end
+
+"""
+    LeveneTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Levene's Test on a DataFrame.
+"""
+function HypothesisTests.LeveneTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col)
+    return LeveneTest(groups...)
+end
+
+"""
+    BrownForsytheTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Brown-Forsythe Test on a DataFrame.
+"""
+function HypothesisTests.BrownForsytheTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col)
+    return BrownForsytheTest(groups...)
+end
+
+"""
+    FlignerKilleenTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Fligner-Killeen Test on a DataFrame.
+"""
+function HypothesisTests.FlignerKilleenTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :categorical, data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col)
+    return FlignerKilleenTest(groups...)
+end
+
+# ==============================================================================
+# Extension: 2-Sample Tests (DataFrame)
+# ==============================================================================
+
+"""
+    EqualVarianceTTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+Perform Student's T-Test. Validation of binary groups is handled during extraction.
+"""
+function HypothesisTests.EqualVarianceTTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return EqualVarianceTTest(x, y)
+end
+
+"""
+    UnequalVarianceTTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Welch's T-Test (unequal variance) on a DataFrame (exactly 2 groups).
+"""
+function HypothesisTests.UnequalVarianceTTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return UnequalVarianceTTest(x, y)
+end
+
+"""
+    HypothesisTests.SignTest(df::DataFrame, group_col::Symbol, data_col::Symbol, median::Real = 0)
+
+Perform paired Sign Test on a DataFrame with exactly 2 groups.
+- `group_col`: Must be binary (exactly 2 levels).
+- `data_col`: Must be numeric.
+- `median`: Null median of paired differences (default `0`).
+"""
+function HypothesisTests.SignTest(df::DataFrame, group_col::Symbol, data_col::Symbol, median::Real = 0)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return HypothesisTests.SignTest(x, y, median)
+end
+
+"""
+    HypothesisTests.SignedRankTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Wilcoxon Signed-Rank Test on a DataFrame with exactly 2 groups.
+- `group_col`: Must be binary (exactly 2 levels).
+- `data_col`: Must be numeric.
+"""
+function HypothesisTests.SignedRankTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return HypothesisTests.SignedRankTest(x, y)
+end
+
+"""
+    VarianceFTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform F-Test for variances on a DataFrame (exactly 2 groups).
+"""
+function HypothesisTests.VarianceFTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return VarianceFTest(x, y)
+end
+
+"""
+    MannWhitneyUTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+Perform Mann-Whitney U Test. Automatically handles categorical data codes.
+"""
+function HypothesisTests.MannWhitneyUTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary)
+    _assert_requirement(_is_numeric(df[!, data_col]) || _is_ordered(df[!, data_col]), "MannWhitneyU requires numeric or ordered DV.")
+    is_cat = _is_categorical(df[!, data_col])
+    x, y = _extract_two_groups(df, group_col, data_col; force_numeric_data=is_cat)
+    return MannWhitneyUTest(x, y)
+end
+
+"""
+    ApproximateTwoSampleKSTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Approximate Two-Sample KS Test on a DataFrame (exactly 2 groups).
+"""
+function HypothesisTests.ApproximateTwoSampleKSTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return ApproximateTwoSampleKSTest(x, y)
+end
+
+"""
+    JonckheereTerpstraTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Jonckheere-Terpstra test.
+- `group_col` (IV): Must be Ordered Categorical.
+- `data_col` (DV): Must be Numeric or Ordered Categorical.
+"""
+function JonckheereTerpstraTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    # 1. Validate Types
+    _validate_columns(df, group_col => :ordered)
+    _assert_requirement(
+        _is_numeric(df[!, data_col]) || _is_ordered(df[!, data_col]), 
+        "JonckheereTerpstra requires numeric or ordered DV.")
+    
+    # 2. Extract and Dispatch
+    force_num = _is_ordered(df[!, data_col])
+    groups, _ = _extract_groups_with_labels(df, group_col, data_col; force_numeric_data=force_num)
+    return JonckheereTerpstraTest(groups)
+end
+
+"""
+    CochranArmitageTest(df::DataFrame, group_col::Symbol, data_col::Symbol; scores=:equidistant)
+
+Perform Cochran-Armitage test for trend in proportions on raw dataframe.
+- `group_col` (IV): Must be Ordered Categorical.
+- `data_col` (DV): Must be Binary.
+"""
+function CochranArmitageTest(df::DataFrame, group_col::Symbol, data_col::Symbol; kwargs...)
+    _validate_columns(df, group_col => :ordered, data_col => :binary)
+    tbl = _pivot_freq_table(df, data_col, group_col, nothing) # Rows: DV, Cols: IV (Ordered)
+    
+    success = Vector{Int}(tbl[2, :])
+    total = Vector{Int}(sum(tbl, dims=1)[:])
+    return CochranArmitageTest(success, total; kwargs...)
+end
+
+"""
+    CochranArmitageTest(df::DataFrame, group_col::Symbol, data_col::Symbol, freq_col::Symbol; scores=:equidistant)
+
+Perform Cochran-Armitage test for trend in proportions on freq dataframe.
+- `group_col` (IV): Must be Ordered Categorical.
+- `data_col` (DV): Must be Binary.
+- `freq_col` (Frequencies): Must be numeric.
+"""
+function CochranArmitageTest(df::DataFrame, group_col::Symbol, data_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(df, group_col => :ordered, data_col => :binary, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, data_col, group_col, freq_col)
+    
+    success = Vector{Int}(tbl[2, :])
+    total = Vector{Int}(sum(tbl, dims=1)[:])
+    return CochranArmitageTest(success, total; kwargs...)
+end
+
+"""
+    LinearByLinearTest(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+
+Perform Linear-by-Linear Association test.
+- `row_col` (IV): Must be Ordered Categorical.
+- `col_col` (DV): Must be Ordered Categorical.
+"""
+function LinearByLinearTest(df::DataFrame, row_col::Symbol, col_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :ordered, col_col => :ordered)
+    tbl = _pivot_freq_table(df, row_col, col_col, nothing)
+    return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
+end
+
+"""
+    LinearByLinearTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform Linear-by-Linear Association test.
+- `row_col` (IV): Must be Ordered Categorical.
+- `col_col` (DV): Must be Ordered Categorical.
+- `freq_col` (Frequencies): Must be numeric.
+"""
+function LinearByLinearTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(df, row_col => :ordered, col_col => :ordered, freq_col => :numeric)
+    tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
+    return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
+end
+
+# ==============================================================================
+# Extension: One sample Tests (DataFrame)
+# ==============================================================================
+"""
+    OneSampleTTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+
+Perform a one-sample Student's t-test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.OneSampleTTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.OneSampleTTest(data, mu)
+end
+
+"""
+    OneSampleZTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+
+Perform a one-sample z-test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.OneSampleZTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.OneSampleZTest(data, mu)
+end
+
+"""
+    SignTest(df::DataFrame, data_col::Symbol, median::Real = 0)
+
+Perform a one-sample sign test against a hypothesized median.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.SignTest(df::DataFrame, data_col::Symbol, median::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.SignTest(data, median)
+end
+
+"""
+    SignedRankTest(df::DataFrame, data_col::Symbol)
+
+Perform a one-sample Wilcoxon signed-rank test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.SignedRankTest(df::DataFrame, data_col::Symbol)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.SignedRankTest(data)
+end
+
+"""
+    BinomialTest(df::DataFrame, data_col::Symbol, p::Real = 0.5)
+
+Perform a one-sample binomial test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.BinomialTest(df::DataFrame, data_col::Symbol, p::Real = 0.5)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.BinomialTest(data, p)
+end
+
+#FILEPATH: ./groupeddataframe_ext.jl
+# src/Dispatch/groupeddataframe_ext.jl
+
+# ==============================================================================
+# Extension: Post-hoc Tests (GroupedDataFrame)
+# ==============================================================================
+
+"""
+    PostHocNonPar(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+
+Non-parametric post-hoc pairwise comparisons (e.g., Dunn's test).
+Groups are defined by the `GroupedDataFrame` keys.
+Type requirements: `data_col` must be Numeric or Ordered Categorical.
+"""
+function PostHocNonPar(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+    parent_df = parent(gd)
+    # Validate DV
+    _assert_requirement(
+        _is_numeric(parent_df[!, data_col]) || _is_ordered(parent_df[!, data_col]),
+        "Column :$data_col must be numeric or ordered."
+    )
+    
+    force_num = _is_ordered(parent_df[!, data_col])
+    groups, labels = _extract_groups_with_labels(gd, data_col; force_numeric_data=force_num)
+    return PostHocNonPar(groups; row_labels=labels, kwargs...)
+end
+
+"""
+    PostHocPar(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+
+Perform parametric post-hoc pairwise comparisons (e.g., Tukey's HSD).
+Groups are defined by the `GroupedDataFrame` keys.
+Type requirements: `data_col` must be Numeric.
+"""
+function PostHocPar(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, labels = _extract_groups_with_labels(gd, data_col)
+    return PostHocPar(groups; row_labels=labels, kwargs...)
+end
+
+# --- Contingency Table Post-Hoc: Raw & Frequency ---
+
+"""
+    PostHocContingencyRow(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    PostHocContingencyRow(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform row-wise post-hoc comparisons. Rows are defined by `gd` groups.
+"""
+function PostHocContingencyRow(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    return PostHocContingencyRow(tbl; kwargs...)
+end
+
+function PostHocContingencyRow(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return PostHocContingencyRow(tbl; kwargs...)
+end
+
+"""
+    PostHocContingencyCell(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    PostHocContingencyCell(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform cell-level post-hoc analysis (ASR). Rows are defined by `gd` groups.
+"""
+function PostHocContingencyCell(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    return PostHocContingencyCell(tbl; kwargs...)
+end
+
+function PostHocContingencyCell(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return PostHocContingencyCell(tbl; kwargs...)
+end
+
+# ==============================================================================
+# Extension: Standard Categorical Tests (GroupedDataFrame)
+# ==============================================================================
+
+"""
+    ChisqTest(gd::GroupedDataFrame, col_col::Symbol)
+    ChisqTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+
+Compute Pearson's Chi-square test. Rows are defined by `gd` groups.
+"""
+function HypothesisTests.ChisqTest(gd::GroupedDataFrame, col_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    _assert_requirement(all(size(tbl) .>= 2), "ChisqTest requires at least 2x2 table.")
+    return ChisqTest(tbl)
+end
+
+function HypothesisTests.ChisqTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return ChisqTest(tbl)
+end
+
+"""
+    FisherExactTest(gd::GroupedDataFrame, col_col::Symbol)
+    FisherExactTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+
+Compute Fisher's Exact Test (2x2 only). Rows are defined by `gd` groups.
+"""
+function HypothesisTests.FisherExactTest(gd::GroupedDataFrame, col_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    _assert_requirement(size(tbl) == (2, 2), "FisherExactTest requires a 2x2 table.")
+    return FisherExactTest(vec(tbl')...)
+end
+
+function HypothesisTests.FisherExactTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    _assert_requirement(size(tbl) == (2, 2), "FisherExactTest requires a 2x2 table.")
+    return FisherExactTest(vec(tbl')...)
+end
+
+"""
+    FisherExactTestRxC(gd::GroupedDataFrame, col_col::Symbol)
+    FisherExactTestRxC(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+
+Compute Fisher's Exact Test for general RxC tables.
+"""
+function FisherExactTestRxC(gd::GroupedDataFrame, col_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    return FisherExactTestRxC(tbl)
+end
+
+function FisherExactTestRxC(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return FisherExactTestRxC(tbl)
+end
+
+"""
+    PowerDivergenceTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    PowerDivergenceTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Compute Power Divergence Test.
+"""
+function HypothesisTests.PowerDivergenceTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical)
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    _assert_requirement(all(size(tbl) .>= 2), "PowerDivergenceTest requires at least 2x2 table.")
+    return PowerDivergenceTest(tbl; kwargs...)
+end
+
+function HypothesisTests.PowerDivergenceTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+    _validate_columns(parent(gd), col_col => :categorical, freq_col => :numeric)
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return PowerDivergenceTest(tbl; kwargs...)
+end
+
+# ==============================================================================
+# Extension: K-Sample & Variance Tests (GroupedDataFrame)
+# ==============================================================================
+
+"""
+    OneWayANOVATest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform One-Way ANOVA. `gd` groups define the independent variable.
+"""
+function HypothesisTests.OneWayANOVATest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(gd, data_col)
+    return OneWayANOVATest(groups...)
+end
+
+"""
+    WelchANOVATest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Welch's ANOVA.
+"""
+function WelchANOVATest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(gd, data_col)
+    return WelchANOVATest(groups...)
+end
+
+"""
+    KruskalWallisTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Kruskal-Wallis Rank Sum Test. Supports Numeric or Ordered DV.
+"""
+function HypothesisTests.KruskalWallisTest(gd::GroupedDataFrame, data_col::Symbol)
+    parent_df = parent(gd)
+    _assert_requirement(
+        _is_numeric(parent_df[!, data_col]) || _is_ordered(parent_df[!, data_col]),
+        "KruskalWallis requires numeric or ordered DV."
+    )
+    force_num = _is_ordered(parent_df[!, data_col])
+    groups, _ = _extract_groups_with_labels(gd, data_col; force_numeric_data=force_num)
+    return KruskalWallisTest(groups...)
+end
+
+"""
+    LeveneTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Levene's Test for homogeneity of variance.
+"""
+function HypothesisTests.LeveneTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(gd, data_col)
+    return LeveneTest(groups...)
+end
+
+"""
+    BrownForsytheTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Brown-Forsythe Test.
+"""
+function HypothesisTests.BrownForsytheTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(gd, data_col)
+    return BrownForsytheTest(groups...)
+end
+
+"""
+    FlignerKilleenTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Fligner-Killeen Test.
+"""
+function HypothesisTests.FlignerKilleenTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    groups, _ = _extract_groups_with_labels(gd, data_col)
+    return FlignerKilleenTest(groups...)
+end
+
+# ==============================================================================
+# Extension: 2-Sample Tests (GroupedDataFrame)
+# ==============================================================================
+
+"""
+    EqualVarianceTTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Student's T-Test. `gd` must contain exactly 2 groups.
+"""
+function HypothesisTests.EqualVarianceTTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return EqualVarianceTTest(x, y)
+end
+
+"""
+    UnequalVarianceTTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Welch's T-Test (unequal variance). `gd` must contain exactly 2 groups.
+"""
+function HypothesisTests.UnequalVarianceTTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return UnequalVarianceTTest(x, y)
+end
+
+"""
+    HypothesisTests.SignTest(gd::GroupedDataFrame, data_col::Symbol, median::Real = 0)
+
+Perform paired Sign Test on a GroupedDataFrame with exactly 2 groups.
+- `data_col`: Must be numeric.
+- `median`: Null median of paired differences (default `0`).
+"""
+function HypothesisTests.SignTest(gd::GroupedDataFrame, data_col::Symbol, median::Real = 0)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return HypothesisTests.SignTest(x, y, median)
+end
+
+"""
+    HypothesisTests.SignedRankTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Wilcoxon Signed-Rank Test on a GroupedDataFrame with exactly 2 groups.
+- `data_col`: Must be numeric.
+"""
+function HypothesisTests.SignedRankTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return HypothesisTests.SignedRankTest(x, y)
+end
+
+"""
+    VarianceFTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform F-Test for variances. `gd` must contain exactly 2 groups.
+"""
+function HypothesisTests.VarianceFTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return VarianceFTest(x, y)
+end
+
+"""
+    MannWhitneyUTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Mann-Whitney U Test. `gd` must contain exactly 2 groups.
+Supports Numeric or Ordered DV.
+"""
+function HypothesisTests.MannWhitneyUTest(gd::GroupedDataFrame, data_col::Symbol)
+    parent_df = parent(gd)
+    _assert_requirement(
+        _is_numeric(parent_df[!, data_col]) || _is_ordered(parent_df[!, data_col]),
+        "MannWhitneyU requires numeric or ordered DV."
+    )
+    force_num = _is_ordered(parent_df[!, data_col])
+    x, y = _extract_two_groups(gd, data_col; force_numeric_data=force_num)
+    return MannWhitneyUTest(x, y)
+end
+
+"""
+    ApproximateTwoSampleKSTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Approximate Two-Sample KS Test. `gd` must contain exactly 2 groups.
+"""
+function HypothesisTests.ApproximateTwoSampleKSTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return ApproximateTwoSampleKSTest(x, y)
+end
+
+# ==============================================================================
+# Extension: Trend and Association Tests (GroupedDataFrame)
+# ==============================================================================
+
+"""
+    JonckheereTerpstraTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Jonckheere-Terpstra test. 
+The GroupedDataFrame keys must be Ordered Categorical.
+`data_col` must be Numeric or Ordered.
+"""
+function JonckheereTerpstraTest(gd::GroupedDataFrame, data_col::Symbol)
+    parent_df = parent(gd)
+    g_cols = groupcols(gd)
+    
+    # Validate IV (Ordered) and DV (Numeric/Ordered)
+    _assert_requirement(_is_ordered(parent_df[!, g_cols[1]]), "Jonckheere-Terpstra requires ordered groups.")
+    _assert_requirement(
+        _is_numeric(parent_df[!, data_col]) || _is_ordered(parent_df[!, data_col]), 
+        "Jonckheere-Terpstra requires numeric or ordered DV.")
+    
+    force_num = _is_ordered(parent_df[!, data_col])
+    groups, _ = _extract_groups_with_labels(gd, data_col; force_numeric_data=force_num)
+    return JonckheereTerpstraTest(groups)
+end
+
+"""
+    CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+    CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform Cochran-Armitage test for trend. 
+`gd` keys must be Ordered. `data_col` must be Binary.
+"""
+function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+    parent_df = parent(gd)
+    g_cols = groupcols(gd)
+    _validate_columns(parent_df, data_col => :binary)
+    _assert_requirement(_is_ordered(parent_df[!, g_cols[1]]), "Cochran-Armitage requires ordered groups.")
+    
+    tbl = _pivot_freq_table(gd, data_col, nothing)
+    success = Vector{Int}(tbl[2, :])
+    total = Vector{Int}(sum(tbl, dims=1)[:])
+    return CochranArmitageTest(success, total; kwargs...)
+end
+
+function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol, freq_col::Symbol; kwargs...)
+    parent_df = parent(gd)
+    g_cols = groupcols(gd)
+    _validate_columns(parent_df, data_col => :binary, freq_col => :numeric)
+    _assert_requirement(_is_ordered(parent_df[!, g_cols[1]]), "Cochran-Armitage requires ordered groups.")
+    
+    tbl = _pivot_freq_table(gd, data_col, freq_col)
+    success = Vector{Int}(tbl[2, :])
+    total = Vector{Int}(sum(tbl, dims=1)[:])
+    return CochranArmitageTest(success, total; kwargs...)
+end
+
+"""
+    LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Perform Linear-by-Linear Association test.
+Both `gd` groups and `col_col` must be Ordered Categorical.
+"""
+function LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+    parent_df = parent(gd)
+    g_cols = groupcols(gd)
+    _validate_columns(parent_df, col_col => :ordered)
+    _assert_requirement(_is_ordered(parent_df[!, g_cols[1]]), "Linear-by-Linear requires ordered groups.")
+    
+    tbl = _pivot_freq_table(gd, col_col, nothing)
+    return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
+end
+
+function LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+    parent_df = parent(gd)
+    g_cols = groupcols(gd)
+    _validate_columns(parent_df, col_col => :ordered, freq_col => :numeric)
+    _assert_requirement(_is_ordered(parent_df[!, g_cols[1]]), "Linear-by-Linear requires ordered groups.")
+    
+    tbl = _pivot_freq_table(gd, col_col, freq_col)
+    return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
+end
+#FILEPATH: ./helpers.jl
+# src/Dispatch/helpers.jl
+
+# ==============================================================================
+#  Helper Functions: Validation, Cleaning, and Extraction
+# ==============================================================================
+
+"""
+    _is_valid_value(x)
+Check if a value is not missing, nothing, or NaN.
+"""
+@inline _is_valid_value(x) = !ismissing(x) && !isnothing(x) && (!(x isa Number) || !isnan(x))
+
+"""
+    _get_clean_data(col)
+Returns a collection of values filtering out missing, nothing, and NaN.
+"""
+_get_clean_data(col) = [x for x in col if _is_valid_value(x)]
+
+"""
+    _get_clean_df(df::AbstractDataFrame, cols::Vector{Symbol})
+Returns a copy of the DataFrame with rows removed where any of the specified 
+columns contain invalid values (missing, nothing, or NaN).
+"""
+function _get_clean_df(df::AbstractDataFrame, cols::Vector{Symbol})
+    return filter(row -> all(_is_valid_value(row[c]) for c in cols), df[:, cols])
+end
+
+# --- Type Checkers ---
+
+_is_numeric(col) = (T = eltype(_get_clean_data(col)); nonmissingtype(T) <: Number && !(col isa AbstractCategoricalArray))
+_is_ordered(col) = col isa AbstractCategoricalArray && isordered(col)
+_is_categorical(col) = col isa AbstractCategoricalArray || eltype(_get_clean_data(col)) <: Union{AbstractString, Symbol, Bool}
+_is_binary(col) = length(unique(_get_clean_data(col))) == 2
+
+"""
+    _validate_columns(df::AbstractDataFrame, requirements::Pair{Symbol, Symbol}...)
+Validates multiple columns against specific types. 
+Types: :numeric, :categorical, :ordered, :binary.
+"""
+function _validate_columns(df::AbstractDataFrame, requirements::Pair{Symbol, Symbol}...)
+    for (col, req) in requirements
+        if req == :numeric
+            _assert_requirement(_is_numeric(df[!, col]), "Column :$col must be numeric.")
+        elseif req == :categorical
+            _assert_requirement(_is_categorical(df[!, col]), "Column :$col must be categorical.")
+        elseif req == :ordered
+            _assert_requirement(_is_ordered(df[!, col]), "Column :$col must be ordered categorical.")
+        elseif req == :binary
+            _assert_requirement(_is_binary(df[!, col]), "Column :$col must be binary (exactly 2 levels).")
+        end
+    end
+end
+
+_assert_requirement(cond::Bool, msg::String) = cond || throw(ArgumentError(msg))
+
+# --- Extraction Helpers ---
+
+function _get_levels(col)
+    col isa AbstractCategoricalArray ? levels(col) : sort(unique(_get_clean_data(col)))
+end
+
+function _convert_to_numeric(data)
+    data isa AbstractCategoricalArray ? Float64.(levelcode.(data)) : Vector{Float64}(data)
+end
+
+function _format_group_key(key)
+    vals = values(key)
+    return length(vals) == 1 ? string(vals[1]) : join(string.(vals), " | ")
+end
+
+"""
+    _extract_groups_with_labels(df::DataFrame, group_col, data_col; force_numeric_data=false)
+Unified group extractor for DataFrames.
+"""
+function _extract_groups_with_labels(df::DataFrame, group_col::Symbol, data_col::Symbol; force_numeric_data=false)
+    unique_labels = _get_levels(df[!, group_col])
+    groups, labels_str = Vector{Vector{Float64}}(), String[]
+    
+    for lbl in unique_labels
+        (isnothing(lbl) || ismissing(lbl)) && continue
+        group_mask = isequal.(df[!, group_col], lbl)
+        clean_data = _get_clean_data(df[group_mask, data_col])
+        
+        if !isempty(clean_data)
+            push!(groups, force_numeric_data ? _convert_to_numeric(clean_data) : Vector{Float64}(clean_data))
+            push!(labels_str, string(lbl))
+        end
+    end
+    return groups, labels_str
+end
+
+function _extract_groups_with_labels(gd::GroupedDataFrame, data_col::Symbol; force_numeric_data=false)
+    groups, labels_str = Vector{Vector{Float64}}(), String[]
+    for (key, subdf) in pairs(gd)
+        clean_data = _get_clean_data(subdf[!, data_col])
+        if !isempty(clean_data)
+            push!(groups, force_numeric_data ? _convert_to_numeric(clean_data) : Vector{Float64}(clean_data))
+            push!(labels_str, _format_group_key(key))
+        end
+    end
+    return groups, labels_str
+end
+
+function _extract_two_groups(args...; kwargs...)
+    groups, labels = _extract_groups_with_labels(args...; kwargs...)
+    _assert_requirement(length(groups) == 2, "Test requires exactly 2 groups. Found $(length(groups)): $labels")
+    return groups[1], groups[2]
+end
+
+# --- Table Helpers ---
+
+function _pivot_freq_table(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Union{Symbol, Nothing})
+    cols_to_clean = isnothing(freq_col) ? [row_col, col_col] : [row_col, col_col, freq_col]
+    df_clean = _get_clean_df(df, cols_to_clean)
+    
+    if isnothing(freq_col)
+        # Raw data: use freqtable directly
+        tbl = freqtable(df_clean, row_col, col_col)
+    else
+        # Weighted/Frequency data: unstack
+        wide_df = unstack(df_clean, row_col, col_col, freq_col, fill=0)
+        r_labels = string.(wide_df[!, 1])
+        c_labels = names(wide_df)[2:end]
+        data_mat = Matrix{Int}(wide_df[:, 2:end])
+        return NamedArray(data_mat, (r_labels, c_labels), (string(row_col), string(col_col)))
+    end
+    return tbl
+end
+
+function _pivot_freq_table(gd::GroupedDataFrame, col_col::Symbol, freq_col::Union{Symbol, Nothing}=nothing)
+    parent_df = parent(gd)
+    c_labels_raw = _get_levels(parent_df[!, col_col])
+    c_labels = string.(c_labels_raw)
+    c_map = Dict(val => i for (i, val) in enumerate(c_labels_raw))
+    r_labels = [_format_group_key(key) for key in keys(gd)]
+    T = isnothing(freq_col) ? Int : Float64
+    data_mat = zeros(T, length(gd), length(c_labels))
+    
+    for (i, subdf) in enumerate(gd)
+        if isnothing(freq_col)
+            clean_col = _get_clean_data(subdf[!, col_col])
+            for val in clean_col
+                if haskey(c_map, val)
+                    data_mat[i, c_map[val]] += 1
+                end
+            end
+        else
+            sub_clean = _get_clean_df(subdf, [col_col, freq_col])
+            for row in eachrow(sub_clean)
+                val = row[col_col]
+                if haskey(c_map, val)
+                    data_mat[i, c_map[val]] += row[freq_col]
+                end
+            end
+        end
+    end
+    
+    return NamedArray(data_mat, (r_labels, c_labels), ("Group", string(col_col)))
+end
+

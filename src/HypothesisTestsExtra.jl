@@ -59,7 +59,7 @@ include("Dispatch/groupeddataframe_ext.jl")
 
 # New test functions
 export WelchANOVATest
-export FisherExactTestMC, FisherExactTestRxC
+export FisherExactTestRxC, mc_result, FisherMCSummary
 export CochranArmitageTest, JonckheereTerpstraTest, LinearByLinearTest
 
 # PostHoc Related Export

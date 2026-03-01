@@ -12,7 +12,8 @@ WelchANOVATest
 Tests for independence in tables larger than 2x2.
 ```@docs
 FisherExactTestRxC
-FisherExactTestMC
+FisherMCSummary
+mc_result
 ```
 
 ### Trend and Association Tests
@@ -110,6 +111,12 @@ HypothesisTests.EqualVarianceTTest(::GroupedDataFrame, ::Symbol)
 HypothesisTests.UnequalVarianceTTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.UnequalVarianceTTest(::GroupedDataFrame, ::Symbol)
 
+HypothesisTests.SignTest(::DataFrame, ::Symbol, ::Symbol, ::Real)
+HypothesisTests.SignTest(::GroupedDataFrame, ::Symbol, ::Real)
+
+HypothesisTests.SignedRankTest(::DataFrame, ::Symbol, ::Symbol)
+HypothesisTests.SignedRankTest(::GroupedDataFrame, ::Symbol)
+
 HypothesisTests.VarianceFTest(::DataFrame, ::Symbol, ::Symbol)
 HypothesisTests.VarianceFTest(::GroupedDataFrame, ::Symbol)
 
@@ -134,4 +141,15 @@ JonckheereTerpstraTest(::GroupedDataFrame, ::Symbol)
 LinearByLinearTest(::DataFrame, ::Symbol, ::Symbol)
 LinearByLinearTest(::DataFrame, ::Symbol, ::Symbol, ::Symbol)
 LinearByLinearTest(::GroupedDataFrame, ::Symbol)
+```
+
+### One-Sample Tests
+Tests for a single sample column in a `DataFrame`. Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+
+```@docs
+HypothesisTests.OneSampleTTest(::DataFrame, ::Symbol, ::Real)
+HypothesisTests.OneSampleZTest(::DataFrame, ::Symbol, ::Real)
+HypothesisTests.SignTest(::DataFrame, ::Symbol, ::Real)
+HypothesisTests.SignedRankTest(::DataFrame, ::Symbol)
+HypothesisTests.BinomialTest(::DataFrame, ::Symbol, ::Real)
 ```

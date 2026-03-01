@@ -189,7 +189,7 @@ Compute Power Divergence Test from aggregated frequency data.
 function HypothesisTests.PowerDivergenceTest(df::DataFrame, row_col::Symbol, col_col::Symbol, freq_col::Symbol; kwargs...)
     _validate_columns(df, row_col => :categorical, col_col => :categorical, freq_col => :numeric)
     tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
-    _assert_requirement(size(tbl) == (2, 2), "FisherExactTest requires a 2x2 table.")
+    _assert_requirement(size(tbl) == (2, 2), "PowerDivergenceTest requires a 2x2 table.")
     return PowerDivergenceTest(tbl; kwargs...)
 end
 
@@ -289,6 +289,33 @@ function HypothesisTests.UnequalVarianceTTest(df::DataFrame, group_col::Symbol, 
     _validate_columns(df, group_col => :binary, data_col => :numeric)
     x, y = _extract_two_groups(df, group_col, data_col)
     return UnequalVarianceTTest(x, y)
+end
+
+"""
+    HypothesisTests.SignTest(df::DataFrame, group_col::Symbol, data_col::Symbol, median::Real = 0)
+
+Perform paired Sign Test on a DataFrame with exactly 2 groups.
+- `group_col`: Must be binary (exactly 2 levels).
+- `data_col`: Must be numeric.
+- `median`: Null median of paired differences (default `0`).
+"""
+function HypothesisTests.SignTest(df::DataFrame, group_col::Symbol, data_col::Symbol, median::Real = 0)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return HypothesisTests.SignTest(x - y, median)
+end
+
+"""
+    HypothesisTests.SignedRankTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+
+Perform Wilcoxon Signed-Rank Test on a DataFrame with exactly 2 groups.
+- `group_col`: Must be binary (exactly 2 levels).
+- `data_col`: Must be numeric.
+"""
+function HypothesisTests.SignedRankTest(df::DataFrame, group_col::Symbol, data_col::Symbol)
+    _validate_columns(df, group_col => :binary, data_col => :numeric)
+    x, y = _extract_two_groups(df, group_col, data_col)
+    return HypothesisTests.SignedRankTest(x, y)
 end
 
 """
@@ -404,3 +431,85 @@ function LinearByLinearTest(df::DataFrame, row_col::Symbol, col_col::Symbol, fre
     tbl = _pivot_freq_table(df, row_col, col_col, freq_col)
     return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
 end
+
+# ==============================================================================
+# Extension: One sample Tests (DataFrame)
+# ==============================================================================
+"""
+    OneSampleTTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+
+Perform a one-sample Student's t-test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.OneSampleTTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.OneSampleTTest(data, mu)
+end
+
+"""
+    OneSampleZTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+
+Perform a one-sample z-test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.OneSampleZTest(df::DataFrame, data_col::Symbol, mu::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.OneSampleZTest(data, mu)
+end
+
+"""
+    SignTest(df::DataFrame, data_col::Symbol, median::Real = 0)
+
+Perform a one-sample sign test against a hypothesized median.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.SignTest(df::DataFrame, data_col::Symbol, median::Real = 0)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.SignTest(data, median)
+end
+
+"""
+    SignedRankTest(df::DataFrame, data_col::Symbol)
+
+Perform a one-sample Wilcoxon signed-rank test from a DataFrame column.
+Type requirements: `data_col` must be Numeric.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.SignedRankTest(df::DataFrame, data_col::Symbol)
+    _validate_columns(df, data_col => :numeric)
+    data = _get_clean_data(df[:, data_col])
+    return HypothesisTests.SignedRankTest(data)
+end
+
+"""
+    BinomialTest(df::DataFrame, data_col::Symbol, p::Real = 0.5)
+
+Perform a one-sample binomial test from a DataFrame column.
+Type requirements: `data_col` must be Binary.
+Invalid values (`missing`, `nothing`, `NaN`) are removed before testing.
+"""
+function HypothesisTests.BinomialTest(df::DataFrame, data_col::Symbol, p::Real = 0.5)
+    _validate_columns(df, data_col => :binary)
+    data = _get_clean_data(df[:, data_col])
+
+    booldata =
+        if eltype(data) <: Bool
+            data
+        else
+            try
+                Bool.(data)
+            catch
+                data .== unique(data)[1]
+            end
+        end
+
+    return HypothesisTests.BinomialTest(booldata, p)
+end
+
+

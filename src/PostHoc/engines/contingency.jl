@@ -65,21 +65,14 @@ function _run_fisher_row(d::ContingencyData)
         if cols < 2
             note = "Degenerate"
         else
-            # Use the smart constructor.
-            # It returns either HypothesisTests.FisherExactTest (for 2x2)
-            # or FisherExactTestMC (for 2xC where C > 2).
             ft = FisherExactTestRxC(clean_sub)
-            
             p_val = pvalue(ft)
-            
-            # Determine statistic and note based on the returned type
-            if isa(ft, FisherExactTestMC)
-                # For Monte Carlo, the statistic is the log-probability metric
-                stat_val = ft.log_prob_obs 
+
+            if isnothing(ft.exact2x2)
+                stat_val = ft.log_denom_obs
                 note = "MC RxC"
             else
-                # For Standard 2x2, use the Odds Ratio (omega)
-                stat_val = ft.omega
+                stat_val = isnothing(ft.exact2x2) ? NaN : ft.exact2x2.ω
                 note = "Exact 2x2"
             end
         end

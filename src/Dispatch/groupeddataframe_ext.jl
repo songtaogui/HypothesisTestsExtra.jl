@@ -257,6 +257,31 @@ function HypothesisTests.UnequalVarianceTTest(gd::GroupedDataFrame, data_col::Sy
 end
 
 """
+    HypothesisTests.SignTest(gd::GroupedDataFrame, data_col::Symbol, median::Real = 0)
+
+Perform paired Sign Test on a GroupedDataFrame with exactly 2 groups.
+- `data_col`: Must be numeric.
+- `median`: Null median of paired differences (default `0`).
+"""
+function HypothesisTests.SignTest(gd::GroupedDataFrame, data_col::Symbol, median::Real = 0)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return HypothesisTests.SignTest(x, y, median)
+end
+
+"""
+    HypothesisTests.SignedRankTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Perform Wilcoxon Signed-Rank Test on a GroupedDataFrame with exactly 2 groups.
+- `data_col`: Must be numeric.
+"""
+function HypothesisTests.SignedRankTest(gd::GroupedDataFrame, data_col::Symbol)
+    _validate_columns(parent(gd), data_col => :numeric)
+    x, y = _extract_two_groups(gd, data_col)
+    return HypothesisTests.SignedRankTest(x, y)
+end
+
+"""
     VarianceFTest(gd::GroupedDataFrame, data_col::Symbol)
 
 Perform F-Test for variances. `gd` must contain exactly 2 groups.

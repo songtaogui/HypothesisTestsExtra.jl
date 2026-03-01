@@ -31,15 +31,15 @@
         # 2x2 fallback
         m_2x2 = [10 5; 2 15]
         ft_2x2 = FisherExactTestRxC(m_2x2)
-        @test ft_2x2 isa HypothesisTests.FisherExactTest
+        @test ft_2x2 isa FisherExactTestRxC
         ftr = FisherExactTest(m_2x2)
         @test ftr isa HypothesisTests.FisherExactTest
         
         # RxC MC
         m_rxc = [5 10 2; 3 15 7; 12 4 10]
         ft_mc = FisherExactTestRxC(m_rxc)
-        @test ft_mc isa FisherExactTestMC
-        @test HypothesisTests.testname(ft_mc) == "Fisher's Exact Test for RxC Tables (Monte Carlo)"
+        @test ft_mc isa FisherExactTestRxC
+        @test HypothesisTests.testname(ft_mc) == "Fisher's Exact Test for Contingency Tables"
         
         # StatsAPI methods
         pval = pvalue(ft_mc; n_sim=5000)

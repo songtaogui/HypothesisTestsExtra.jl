@@ -10,7 +10,7 @@
 <!-- Meta Info -->
 [![][License-img]][License-url] [![][Lifecycle-img]][Lifecycle-url]
 
----
+
 
 [docs-online-img]: https://img.shields.io/badge/docs-online-informational?style=for-the-badge&logo=Read%20The%20Docs&logoColor=white&labelColor=black
 [docs-online-url]: https://songtaogui.github.io/HypothesisTestsExtra.jl/dev
