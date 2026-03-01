@@ -1,6 +1,6 @@
 name = "HypothesisTestsExtra"
 uuid = "ddd859b9-8813-4e20-ab59-a7b08a106634"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["songtaogui<songtaogui@sina.com>"]
 
 [deps]
