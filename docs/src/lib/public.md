@@ -54,6 +54,19 @@ CellTestToDataframe
 ## DataFrames Extensions
 This package extends `HypothesisTests.jl` and internal methods to support `DataFrame` and `GroupedDataFrame` inputs. 
 
+::: warn
+
+Starting from **HypothesisTestsExtra.jl v0.3.0**, support for `DataFrame` and `GroupedDataFrame` is provided via a **package extension** (`HypothesisTestsExtraDataFramesExt`), not core loading.
+
+This means DataFrame-related methods are only available when the extension is activated by loading its weak dependencies.
+
+```julia
+using HypothesisTestsExtra
+using DataFrames, CategoricalArrays
+```
+
+:::
+
 **Note on GroupedDataFrame Dispatch:**
 For all `GroupedDataFrame` (GDF) methods, the grouping is determined by the GDF's keys. You do not need to specify a group column; the first grouping column in the GDF is used as the Independent Variable (IV).
 

@@ -1,3 +1,12 @@
+#FILEPATH: ext/DataFramesExt/grouped/trends.jl
+
+"""
+    JonckheereTerpstraTest(gd::GroupedDataFrame, data_col::Symbol)
+
+Jonckheere-Terpstra trend test using group order from `gd`.
+Type requirements: first grouping column (Ordered categorical), `data_col` (Numeric or Ordered).
+Ordered response data are converted to numeric level codes internally.
+"""
 function JonckheereTerpstraTest(gd::GroupedDataFrame, data_col::Symbol)
     parent_df = parent(gd)
     g_cols = groupcols(gd)
@@ -10,6 +19,12 @@ function JonckheereTerpstraTest(gd::GroupedDataFrame, data_col::Symbol)
     return JonckheereTerpstraTest(groups)
 end
 
+"""
+    CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
+
+Cochran-Armitage trend test for binary outcome across ordered groups in `gd`.
+Type requirements: first grouping column (Ordered categorical), `data_col` (Binary).
+"""
 function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
     parent_df = parent(gd)
     g_cols = groupcols(gd)
@@ -22,6 +37,12 @@ function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol; kwargs...)
     return CochranArmitageTest(success, total; kwargs...)
 end
 
+"""
+    CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol, freq_col::Symbol; kwargs...)
+
+Cochran-Armitage trend test for weighted binary data across ordered groups.
+Type requirements: first grouping column (Ordered categorical), `data_col` (Binary), `freq_col` (Numeric integer-like counts).
+"""
 function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol, freq_col::Symbol; kwargs...)
     parent_df = parent(gd)
     g_cols = groupcols(gd)
@@ -34,6 +55,12 @@ function CochranArmitageTest(gd::GroupedDataFrame, data_col::Symbol, freq_col::S
     return CochranArmitageTest(success, total; kwargs...)
 end
 
+"""
+    LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
+
+Linear-by-linear association test where row order comes from `gd` grouping and columns from `col_col`.
+Type requirements: first grouping column (Ordered categorical), `col_col` (Ordered categorical).
+"""
 function LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
     parent_df = parent(gd)
     g_cols = groupcols(gd)
@@ -44,6 +71,12 @@ function LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol; kwargs...)
     return LinearByLinearTest(Matrix{Int}(tbl); kwargs...)
 end
 
+"""
+    LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
+
+Linear-by-linear association test for weighted grouped contingency tables.
+Type requirements: first grouping column (Ordered categorical), `col_col` (Ordered categorical), `freq_col` (Numeric integer-like counts).
+"""
 function LinearByLinearTest(gd::GroupedDataFrame, col_col::Symbol, freq_col::Symbol; kwargs...)
     parent_df = parent(gd)
     g_cols = groupcols(gd)
