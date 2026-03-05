@@ -99,7 +99,7 @@ println(df_letters)
 
 ### Accessing Results
 
-::: warn
+::: compat
 
 Starting from **HypothesisTestsExtra.jl v0.3.0**, support for `DataFrame` and `GroupedDataFrame` is provided via a **package extension** (`HypothesisTestsExtraDataFramesExt`), not core loading.
 
