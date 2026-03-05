@@ -63,7 +63,7 @@ function PostHocPar(groups::AbstractVector{<:AbstractVector{<:Real}};
                     alpha_levene=0.05, 
                     cld=false,
                     pairs::Union{Nothing, Vector{Tuple{Int, Int}}} = nothing,
-                    row_labels::Vector{String}=String[])
+                    row_labels::AbstractVector{<:AbstractString}=String[])
     
     if !haskey(METHOD_DISPATCH, method)
         error("Unknown method :$method. Supported: $(keys(METHOD_DISPATCH))")
@@ -170,7 +170,7 @@ function PostHocNonPar(groups::AbstractVector{<:AbstractVector{<:Real}};
                         alpha=0.05, 
                         cld=false,
                         pairs::Union{Nothing, Vector{Tuple{Int, Int}}} = nothing,
-                        row_labels::Vector{String}=String[])
+                        row_labels::AbstractVector{<:AbstractString}=String[])
     
     ranked_groups, tie_corr, N = calculate_ranks(groups)
     k = length(groups)
@@ -229,8 +229,11 @@ Perform cell-level post-hoc analysis on a contingency table to identify specific
 # Arguments
 - `table`: RxC contingency table (Matrix of Integers).
 - `method`: 
-    - `:asr`: Adjusted Standardized Residuals. Tests if a cell deviates from independence.
-    - `:fisher_1vsall`: Fisher's Exact Test for each cell (One vs Rest).
+    - `:asr`: (Default) Adjusted Standardized Residuals. Tests if a cell deviates from independence.
+    - `:fisher`: Fisher's Exact Test for each cell (One vs Rest).
+    - `:[asr|fisher]_[bonferroni|bh|fdr]`: posthoc methods with Pvalue adjustment. e.g.:
+             `:asr_bonferroni` means Adjusted Standardized Residuals with Bonferroni correction.
+             `:asr_bh` and `:asr_fdr` are the same, means FDR P-value correction.
 - `adjustment::Symbol`: The method to adjust p-values for multiple comparisons.
     - `:bonferroni`: Strong control of FWER (p * m).
     - `:bh` (or `:fdr`): Benjamini-Hochberg procedure for False Discovery Rate control.
@@ -258,7 +261,7 @@ r_labs = ["Young", "Middle", "Old"]
 c_labs = ["Opt_A", "Opt_B", "Opt_C"]
 
 # 1. Use Adjusted Standardized Residuals (ASR) with Bonferroni correction
-res_asr = PostHocContingencyCell(table, method=:asr, adjustment=:bonferroni,
+res_asr = PostHocContingencyCell(table, method=:asr_bonferroni
                                  row_labels=r_labs, col_labels=c_labs)
 
 # Check the matrix of adjusted residuals (Z-scores)
@@ -268,22 +271,22 @@ res_asr = PostHocContingencyCell(table, method=:asr, adjustment=:bonferroni,
 # println(res_asr.sig_mat)
 
 # 2. Use One-vs-Rest Fisher's Exact Test with FDR (Benjamini-Hochberg) adjustment
-res_fisher = PostHocContingencyCell(table, method=:fisher_1vsall, adjustment=:bh,
+res_fisher = PostHocContingencyCell(table, method=:fisher_bh
                                     row_labels=r_labs, col_labels=c_labs)
 ```
 """
 function PostHocContingencyCell(table::AbstractMatrix{<:Integer};
     method::Symbol=:asr,
-    adjustment::Symbol=:bonferroni,
     alpha::Float64=0.05,
-    row_labels::Vector{String}=String[],
-    col_labels::Vector{String}=String[])
+    row_labels::AbstractVector{<:AbstractString}=String[],
+    col_labels::AbstractVector{<:AbstractString}=String[])
 
     rows, cols = size(table)
 
-    # Auto-detect labels if not provided
     row_labels = _get_auto_labels(table, 1, row_labels, "R")
     col_labels = _get_auto_labels(table, 2, col_labels, "C")
+
+    base_method, adjustment = parse_method_adjustment(method)
 
     total = sum(table)
     row_sums = sum(table, dims=2)
@@ -292,9 +295,7 @@ function PostHocContingencyCell(table::AbstractMatrix{<:Integer};
     stats_mat = zeros(Float64, rows, cols)
     pvals_mat = zeros(Float64, rows, cols)
 
-    if method == :asr
-        # Adjusted Standardized Residuals
-        # Z = (Obs - Exp) / sqrt(Exp * (1 - RowProp) * (1 - ColProp))
+    if base_method == :asr
         for i in 1:rows, j in 1:cols
             expected = (row_sums[i] * col_sums[j]) / total
             obs = table[i, j]
@@ -305,24 +306,20 @@ function PostHocContingencyCell(table::AbstractMatrix{<:Integer};
             z_score = (denom == 0) ? 0.0 : (obs - expected) / denom
 
             stats_mat[i, j] = z_score
-            # Two-tailed p-value from Normal distribution
             pvals_mat[i, j] = 2.0 * ccdf(Normal(), abs(z_score))
         end
 
-    elseif method == :fisher_1vsall
-        # One-vs-Rest Fisher's Exact Test
-        # Constructs a 2x2 table for each cell: [Cell, RowRest; ColRest, TableRest]
+    elseif base_method == :fisher
+        # Fisher one-vs-rest at cell level
         for i in 1:rows, j in 1:cols
             a = table[i, j]
             b = row_sums[i] - a
             c = col_sums[j] - a
             d = total - row_sums[i] - col_sums[j] + a
 
-            # Using standard exact test for 2x2
             ft = FisherExactTest(a, b, c, d)
             pvals_mat[i, j] = pvalue(ft)
 
-            # Calculate Odds Ratio with simple smoothing to avoid division by zero
             safe_b = (b == 0) ? 0.5 : b
             safe_c = (c == 0) ? 0.5 : c
             safe_a = (a == 0) ? 0.5 : a
@@ -330,10 +327,9 @@ function PostHocContingencyCell(table::AbstractMatrix{<:Integer};
             stats_mat[i, j] = (safe_a * safe_d) / (safe_b * safe_c)
         end
     else
-        error("Unknown cell method :$method. Supported: :asr, :fisher_1vsall")
+        error("Unknown cell method base :$base_method. Supported bases: :asr, :fisher")
     end
 
-    # Flatten, Adjust, and Reshape P-values
     flat_p = vec(pvals_mat)
     flat_adj = adjust_pvalues(flat_p, adjustment)
     adj_pvals_mat = reshape(flat_adj, rows, cols)
@@ -342,6 +338,7 @@ function PostHocContingencyCell(table::AbstractMatrix{<:Integer};
 
     return ContingencyCellTestResult(method, adjustment, table, stats_mat, pvals_mat, adj_pvals_mat, sig_mat, alpha, row_labels, col_labels)
 end
+
 
 
 
@@ -356,13 +353,12 @@ Perform pairwise comparisons between rows of a contingency table to identify whi
 # Keyword Arguments
 - `method::Symbol`: The statistical test to use for pairwise comparisons.
     - `:chisq` (Default): Pearson's Chi-square test. Fast and standard for large samples.
-    - `:fisher`: Fisher's Exact Test. 
-        - For **2x2** sub-tables, it computes the exact p-value.
-        - For **2xC** sub-tables (where C > 2), it estimates the p-value via Monte Carlo simulation (see `FisherExactTestRxC`).
-- `adjustment::Symbol`: The method to adjust p-values for multiple comparisons.
-    - `:bonferroni`: Strong control of FWER (p * m).
-    - `:bh` (or `:fdr`): Benjamini-Hochberg procedure for False Discovery Rate control.
-    - `:none`: No adjustment.
+    - `:fisher`: Fisher's Exact Test. For **2x2** sub-tables, it computes the exact p-value;
+        For **2xC** sub-tables (where C > 2), it estimates the p-value via Monte Carlo simulation.
+        (see `FisherExactTestRxC`).
+    - `:[chisq|fisher]_[bonferroni|bh|fdr]`: posthoc methods with Pvalue adjustment. e.g.:
+            `:chisq_bonferroni` means Chi-square test with Bonferroni correction.
+            `:fisher_bh` and `:fisher_fdr` are the same, means FDR P-value correction.
 - `alpha::Float64`: Significance level. Defaults to `0.05`.
 - `cld::Bool`: If `true`, generates Compact Letter Display codes based on the proportion of the first column. Defaults to `false`.
 - `pairs`: An optional `Vector{Tuple{Int, Int}}` specifying a subset of row indices to compare (e.g., `[(1, 2), (1, 3)]`). If `nothing` (default), all possible pairwise combinations are tested.
@@ -388,7 +384,7 @@ row_labs = ["Grp1", "Grp2", "Grp3", "Grp4"]
 
 # 1. Standard Pairwise Chi-Square with Bonferroni adjustment
 # Also requesting Compact Letter Display (cld=true)
-res_chisq = PostHocContingencyRow(table, method=:chisq, adjustment=:bonferroni, 
+res_chisq = PostHocContingencyRow(table, method=:chisq_bonferroni, 
                                   cld=true, row_labels=row_labs)
 
 # Inspect the Compact Letter Display (if generated)
@@ -398,7 +394,7 @@ res_chisq = PostHocContingencyRow(table, method=:chisq, adjustment=:bonferroni,
 # 2. Pairwise Fisher's Exact Test (Robust for small counts and supports RxC)
 # Only comparing Group 1 vs Group 4 and Group 1 vs Group 3
 specific_pairs = [(1, 4), (1, 3)]
-res_fisher = PostHocContingencyRow(table, method=:fisher, adjustment=:none,
+res_fisher = PostHocContingencyRow(table, method=:fisher
                                    pairs=specific_pairs, row_labels=row_labs)
 
 # Print p-values for the specific pairs
@@ -409,22 +405,21 @@ end
 """
 function PostHocContingencyRow(table::AbstractMatrix{<:Integer};
     method::Symbol=:chisq,
-    adjustment::Symbol=:bonferroni,
     cld::Bool=false,
     alpha::Float64=0.05,
     pairs::Union{Nothing,Vector{Tuple{Int,Int}}}=nothing,
-    row_labels::Vector{String}=String[])
+    row_labels::AbstractVector{<:AbstractString}=String[])
 
-    if !haskey(CONTINGENCY_METHOD_DISPATCH, method)
-        error("Unknown method :$method. Supported: $(keys(CONTINGENCY_METHOD_DISPATCH))")
+    base_method, adjustment = parse_method_adjustment(method)
+
+    if !haskey(CONTINGENCY_METHOD_DISPATCH, base_method)
+        error("Unknown row method base :$base_method. Supported bases: $(keys(CONTINGENCY_METHOD_DISPATCH))")
     end
 
     rows, cols = size(table)
 
-    # Auto-detect row labels if not provided
     row_labels = _get_auto_labels(table, 1, row_labels, "Row")
 
-    # Determine pairs to compare
     target_pairs = Vector{Tuple{Int,Int}}()
     if isnothing(pairs)
         for i in 1:rows, j in (i+1):rows
@@ -434,40 +429,31 @@ function PostHocContingencyRow(table::AbstractMatrix{<:Integer};
         target_pairs = pairs
     end
 
-    # Create Data Context
     data = ContingencyData(table, target_pairs, alpha)
 
-    # Run selected algorithm
-    raw_results = CONTINGENCY_METHOD_DISPATCH[method](data)
+    raw_results = CONTINGENCY_METHOD_DISPATCH[base_method](data)
 
-    # Extract P-values for adjustment
     raw_pvals = [r.pval for r in raw_results]
     adj_pvals = adjust_pvalues(raw_pvals, adjustment)
 
-    # Build Final Comparisons objects
     final_comparisons = PostHocComparison[]
-    for k in 1:length(raw_results)
+    for k in eachindex(raw_results)
         res = raw_results[k]
         adj_p = adj_pvals[k]
-        
-        # Construct a descriptive note including the adjustment method
         final_note = isempty(res.note) ? "Adj: $adjustment" : "$(res.note); Adj: $adjustment"
 
         push!(final_comparisons, PostHocComparison(
-            res.r1, res.r2, 0.0, 0.0, res.stat, 0.0, adj_p, 0.0, 0.0, adj_p < alpha, final_note
+            res.r1, res.r2, NaN, NaN, res.stat, NaN, adj_p, NaN, NaN, adj_p < alpha, final_note
         ))
     end
 
-    # Generate Compact Letter Display (CLD) if requested
     letters = Dict{Int,String}()
     if cld
         row_sums = sum(table, dims=2)
-        # Use proportion of the first column for ordering in CLD
         props = [row_sums[i] > 0 ? table[i, 1] / row_sums[i] : 0.0 for i in 1:rows]
         letters = generate_cld(props, final_comparisons, alpha)
     end
 
-    # Create Label Map
     label_map = Dict{Int,String}()
     for (i, l) in enumerate(row_labels)
         label_map[i] = l

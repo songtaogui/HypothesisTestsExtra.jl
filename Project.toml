@@ -1,16 +1,12 @@
 name = "HypothesisTestsExtra"
 uuid = "ddd859b9-8813-4e20-ab59-a7b08a106634"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["songtaogui<songtaogui@sina.com>"]
 
 [deps]
-CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-FreqTables = "da1fdf0e-e0ff-5433-a45f-9bb5ff651cb1"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-NamedArrays = "86f7a689-2022-50b4-a561-43c23ac3c673"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -21,14 +17,20 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
+[weakdeps]
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+
+[extensions]
+HypothesisTestsExtraDataFramesExt = ["DataFrames", "CategoricalArrays"]
+
 [compat]
+julia = "1.11"
 CategoricalArrays = "1.0.2"
 DataFrames = "1.8.1"
 Distributions = "0.25.123"
-FreqTables = "1.0.0"
 HypothesisTests = "0.11.6"
 LinearAlgebra = "1.12.0"
-NamedArrays = "0.10.5"
 PrettyTables = "3.1.2"
 Printf = "1.11.0"
 Random = "1.11.0"
@@ -38,4 +40,3 @@ SpecialFunctions = "2.6.1"
 Statistics = "1.11.1"
 StatsAPI = "1.8.0"
 StatsBase = "0.34.10"
-julia = "1.11"

@@ -12,8 +12,9 @@
 
 ## Quick Start
 
-```julia
-using HypothesisTestsExtra, DataFrames
+```@example v0.3.0
+using HypothesisTestsExtra
+using DataFrames, CategoricalArrays
 
 # 1. Welch ANOVA (Unequal Variances)
 groups = [[1,2,3], [10,11,12], [5,6,7]]
@@ -25,5 +26,5 @@ println(ph)
 
 # 3. DataFrame Support
 df = DataFrame(Group=["A","A","B","B"], Value=[1,2, 10,11])
-PostHocPar(df, :Group, :Value; method=:tukey)
+PostHocPar(df, :Group, :Value; method=:tukey, cld=true)
 ```

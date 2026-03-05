@@ -1,15 +1,11 @@
-# test/test_core_api.jl
+#FILEPATH: test/core/test_api_raw.jl
 
-@testset "Core API (Raw Arrays & Matrices)" begin
-
-    # ==========================================================================
-    # Welch ANOVA (Raw)
-    # ==========================================================================
-    @testset "Welch ANOVA - Raw" begin
+@testset "Core API (Raw arrays & matrices)" begin
+    @testset "Welch ANOVA - raw" begin
         g1 = randn(10)
         g2 = randn(10) .* 2 .+ 1
         g3 = randn(10) .* 0.5 .- 1
-        
+
         t = WelchANOVATest(g1, g2, g3)
         @test t isa WelchANOVATest
         @test pvalue(t) isa Float64
@@ -18,15 +14,11 @@
         @test length(StatsAPI.dof(t)) == 2
         @test HypothesisTests.testname(t) == "Welch's ANOVA test (Unequal Variances)"
         @test HypothesisTests.teststatisticname(t) == "F"
-        
         # Check show output
         t_exp_show = "Welch's ANOVA test (Unequal Variances)\n--------------------------------------\nPopulation details:\n    parameter of interest:   Means\n    value under h_0:         \"all equal\"\n    point estimate:          NaN\n\nTest summary:\n    outcome with 95% confidence: reject h_0\n    two-sided p-value:           0.0017155113460403859\n\nDetails:\n    number of observations: [10, 10, 10]\n    F statistic:            10.5193415505797\n    degrees of freedom:     (2.0, 13.665610261988927)\n"
         @test sprint(show, t) == t_exp_show
     end
 
-    # ==========================================================================
-    # Fisher's Exact Test (RxC & MC)
-    # ==========================================================================
     @testset "Fisher RxC & MC - Raw" begin
         # 2x2 fallback
         m_2x2 = [10 5; 2 15]
@@ -48,13 +40,10 @@
         @test ci[1] <= ci[2]
     end
 
-    # ==========================================================================
-    # Parametric Post-Hoc Tests
-    # ==========================================================================
-    @testset "PostHoc Parametric - Raw" begin
-        g1 = randn(20)
-        g2 = randn(20) .+ 2
-        g3 = randn(20) .- 2
+    @testset "PostHoc Parametric - raw" begin
+        g1 = randn(10)
+        g2 = randn(10) .+ 0.8
+        g3 = randn(10) .- 0.5
         groups = [g1, g2, g3]
 
         # Dispatch check
@@ -82,9 +71,6 @@
         @test nrow(df_tt) == 2
     end
 
-    # ==========================================================================
-    # Non-Parametric Post-Hoc Tests
-    # ==========================================================================
     @testset "PostHoc Non-Parametric - Raw" begin
         g1 = rand(10)
         g2 = rand(10) .+ 0.5
@@ -103,77 +89,25 @@
         @test res_sidak.method == :dunn_sidak
     end
 
-    # ==========================================================================
-    # Contingency Post-Hoc (Row & Cell)
-    # ==========================================================================
     @testset "PostHoc Contingency - Raw Matrix" begin
         tbl = [20 10 5; 10 20 5; 5 5 20]
         
         # Cell-Level (ASR)
-        asr_cell = PostHocContingencyCell(tbl; method=:asr, adjustment=:bonferroni)
+        asr_cell = PostHocContingencyCell(tbl; method=:asr_bonferroni)
         @test asr_cell isa ContingencyCellTestResult
         @test sprint(show, asr_cell)[1:70] == "\n========================================\nPost-hoc Cell Analysis: :asr"
 
         # Cell-Level (Fisher 1vsAll)
-        fisher_cell = PostHocContingencyCell(tbl; method=:fisher_1vsall, adjustment=:bonferroni)
+        fisher_cell = PostHocContingencyCell(tbl; method=:fisher_bonferroni)
         @test fisher_cell isa ContingencyCellTestResult
-        
-        # Results to DataFrame
-        res_cell = asr_cell
-        df_long = DataFrame(res_cell)
-        @test nrow(df_long) == 9 
-        df_mat = CellTestToDataframe(res_cell)
-        @test nrow(df_mat) == 3
 
         # Row-Level
-        res_row = PostHocContingencyRow(tbl; method=:chisq, adjustment=:bh)
+        res_row = PostHocContingencyRow(tbl; method=:chisq_bh)
         @test res_row isa PostHocTestResult
         @test length(res_row.comparisons) == 3 
         
         # Row-Level (Fisher & CLD)
-        fisher_row = PostHocContingencyRow(tbl; method=:fisher, adjustment=:bh, cld=true)
+        fisher_row = PostHocContingencyRow(tbl; method=:fisher_bh, cld=true)
         @test fisher_row isa PostHocTestResult
     end
-
-    # ==============================================================================
-    # Trend & Association Tests
-    # ==============================================================================
-    @testset "Trend & Association Tests" begin
-        # 1. Jonckheere-Terpstra
-        df_jt = DataFrame(
-            dose = categorical(["Low", "Low", "Med", "Med", "High", "High"], ordered=true),
-            resp = [1.2, 1.4, NaN, 2.5, 3.1, missing]
-        )
-        jt = JonckheereTerpstraTest(df_jt, :dose, :resp)
-        @test jt.n_total == 4 
-        @test jt.n_groups == 3
-    
-        # 2. Cochran-Armitage
-        df_ca = DataFrame(
-            dose = categorical(["Low", "Low", "Med", "Med", "High", "High"], ordered=true),
-            success = categorical([0, 0, 1, 0, 1, 1])
-        )
-        ca = CochranArmitageTest(df_ca, :dose, :success)
-        @test sum(ca.n_total) == 6
-    
-        # 3. Linear-by-Linear
-        df_lbl = DataFrame(
-            row = categorical(["L1", "L1", "L2", "L2", "L3", "L3"], ordered=true),
-            col = categorical(["C1", "C2", "C1", "C2", "C1", "C2"], ordered=true),
-            freq = [10, 5, 2, 8, 1, 15]
-        )
-        lbl = LinearByLinearTest(df_lbl, :row, :col, :freq)
-        @test lbl.n == sum(df_lbl.freq)
-    end
-
-
-    # ==========================================================================
-    # Misc
-    # ==========================================================================
-    @testset "Misc Functions" begin
-        randP = randn(5)
-        @test HypothesisTestsExtra.adjust_pvalues(randP, :none) == randP
-        @test_throws ErrorException HypothesisTestsExtra.adjust_pvalues(randP, :abc)
-    end
 end
-

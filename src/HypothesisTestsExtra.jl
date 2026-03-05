@@ -9,9 +9,6 @@ using Statistics
 using LinearAlgebra
 using Printf
 using Rmath
-using DataFrames
-using NamedArrays
-using FreqTables
 using PrettyTables
 import StatsAPI
 using StatsAPI
@@ -19,7 +16,11 @@ using StatsAPI: HypothesisTest
 using StatsBase
 using Random
 using SpecialFunctions: logabsgamma
-using CategoricalArrays
+
+# using DataFrames
+# using NamedArrays
+# using FreqTables
+# using CategoricalArrays
 
 # ==============================================================================
 # Import functions to extend them
@@ -47,9 +48,9 @@ include("NewTests/welchanova.jl")
 include("NewTests/fisherrxc.jl")
 include("NewTests/trends.jl")
 include("PostHoc/posthoc.jl")
-include("Dispatch/helpers.jl")
-include("Dispatch/dataframe_ext.jl")
-include("Dispatch/groupeddataframe_ext.jl")
+# include("Dispatch/helpers.jl")
+# include("Dispatch/dataframe_ext.jl")
+# include("Dispatch/groupeddataframe_ext.jl")
 
 # ==============================================================================
 # Export new types and functions

@@ -1,5 +1,34 @@
 # src/PostHoc/utils/pvalue_adj.jl
 
+"""
+    parse_method_adjustment(method::Symbol)
+    
+Parse a method symbol with optional adjustment suffix.
+Examples:
+  :chisq              -> (:chisq, :none)
+  :chisq_bonferroni   -> (:chisq, :bonferroni)
+  :chisq_bh           -> (:chisq, :bh)
+  :chisq_fdr          -> (:chisq, :bh)
+"""
+function parse_method_adjustment(method::Symbol)
+    s = String(method)
+    parts = split(s, "_")
+    base = Symbol(parts[1])
+
+    if length(parts) == 1
+        return base, :none
+    end
+
+    adj_str = join(parts[2:end], "_")
+    if adj_str == "bonferroni"
+        return base, :bonferroni
+    elseif adj_str == "bh" || adj_str == "fdr"
+        return base, :bh
+    else
+        error("Unknown adjustment suffix in method :$method. Supported suffixes: _bonferroni, _bh, _fdr")
+    end
+end
+
 
 """
     adjust_pvalues(pvals::Vector{Float64}, method::Symbol)
@@ -24,7 +53,6 @@ function adjust_pvalues(pvals::Vector{Float64}, method::Symbol)
     if method == :bonferroni
         adj_p .= min.(1.0, pvals .* n)
     elseif method == :bh || method == :fdr
-        # Benjamini-Hochberg procedure
         perm = sortperm(pvals)
         inv_perm = sortperm(perm)
         sorted_p = pvals[perm]

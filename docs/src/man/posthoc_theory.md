@@ -11,7 +11,7 @@ Used when data is continuous and approximately normally distributed. These tests
 - `method::Symbol`: The specific algorithm (see table below).
 - `alpha_levene::Float64`: Threshold for Levene's test. If $p < \alpha_{levene}$, a warning suggests switching to `:tamhane` due to heteroscedasticity.
 - `pairs::Vector{Tuple{Int, Int}}`: Optional. Define specific pairs to test (e.g., `[(1,2), (1,3)]`) instead of all-pairs.
-- `row_labels::Vector{String}`: Custom names for groups in the output.
+- `row_labels::AbstractVector{<:AbstractString}`: Custom names for groups in the output.
 
 ### Supported Methods
 
@@ -49,15 +49,23 @@ Designed for categorical data after a significant Pearson's Chi-Square test.
 ### A. Row-wise Comparison (`PostHocContingencyRow`)
 Compares the distribution of columns between pairs of rows (groups). 
 - **Methods**:
-    - `:chisq`: Standard $2 \times C$ Chi-Square test for each pair.
-    - `:fisher`: Exact test. For $2 \times 2$ sub-tables, provides exact p-values; for $2 \times C$, uses Monte Carlo simulation.
+    - `:chisq` (Default): Pearson's Chi-square test. Fast and standard for large samples.
+    - `:fisher`: Fisher's Exact Test. (see also `FisherExactTestRxC`).
+        - For **2x2** sub-tables, it computes the exact p-value;
+        - For **2xC** sub-tables (where C > 2), it estimates the p-value via Monte Carlo simulation.
+    - `:[chisq|fisher]_[bonferroni|bh|fdr]`: posthoc methods with Pvalue adjustment. e.g.:
+            `:chisq_bonferroni` means Chi-square test with Bonferroni correction.
+            `:fisher_bh` and `:fisher_fdr` are the same, means FDR P-value correction.
 - **CLD Support**: If `cld=true`, groups are ordered and labeled based on the proportions in the first column of the table.
 
 ### B. Cell-wise Analysis (`PostHocContingencyCell`)
 Identifies which specific cells (intersections) are significant drivers of the association.
 - **Methods**:
-    - `:asr` (Adjusted Standardized Residuals): Returns Z-scores. If $|Z| > 1.96$ (for $\alpha=0.05$), the cell count is significantly different from what is expected under independence.
-    - `:fisher_1vsall`: Performs a "one-vs-rest" Fisher's Exact test for every cell, returning Odds Ratios.
+    - `:asr`: (Default) Adjusted Standardized Residuals. Tests if a cell deviates from independence.
+    - `:fisher`: Fisher's Exact Test for each cell (One vs Rest).
+    - `:[asr|fisher]_[bonferroni|bh|fdr]`: posthoc methods with Pvalue adjustment. e.g.:
+             `:asr_bonferroni` means Adjusted Standardized Residuals with Bonferroni correction.
+             `:asr_bh` and `:asr_fdr` are the same, means FDR P-value correction.
 - **P-Value Adjustments**: Supports `:bonferroni`, `:bh` (Benjamini-Hochberg for FDR), and `:none`.
 
 ---
@@ -89,21 +97,29 @@ println(df_letters)
 
 ---
 
-## 5. Summary of Common Arguments
-
-| Argument | Type | Default | Impact |
-| :--- | :--- | :--- | :--- |
-| `alpha` | `Float64` | `0.05` | Target significance level for tests and Confidence Intervals. |
-| `cld` | `Bool` | `false` | Whether to calculate the letter-based grouping display. |
-| `pairs` | `Vector{Tuple}` | `nothing` | Restricts comparisons to specific indices (reduces alpha inflation). |
-| `adjustment` | `Symbol` | `:bonferroni` | P-value correction method (used in Contingency tests). |
-| `row_labels` | `Vector{Str}` | `[]` | Used for both the main results table and the CLD display. |
-
 ### Accessing Results
-You can convert any `PostHocTestResult` object to a standard Julia DataFrame for further analysis or export:
+
+::: info
+
+Starting from **HypothesisTestsExtra.jl v0.3.0**, support for `DataFrame` and `GroupedDataFrame` is provided via a **package extension** (`HypothesisTestsExtraDataFramesExt`), not core loading.
+
+to use the function below, make sure you also loaded the weak dependencies:
+
 ```julia
-using DataFrames
+using DataFrames, CategoricalArrays
+```
+
+:::
+
+
+You can convert any `PostHocTestResult` object to a standard Julia DataFrame for further analysis or export:
+
+```julia
+using DataFrames, CategoricalArrays
+
 full_table = DataFrame(result)      # Detailed pairwise statistics
 cld_table = GroupTestToDataframe(result) # Only group labels and letters
 ```
+
+
 

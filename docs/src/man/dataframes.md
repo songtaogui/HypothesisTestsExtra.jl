@@ -2,6 +2,63 @@
 
 `HypothesisTestsExtra.jl` provides seamless integration with `DataFrames.jl`. It extends `HypothesisTests.jl` by allowing users to pass `DataFrame` and `GroupedDataFrame` objects directly into test functions, automatically handling data cleaning (removing `missing`/`NaN`) and group extraction.
 
+
+## Loading `DataFrame` / `GroupedDataFrame` Support (Extension-Based)
+
+::: info
+
+Starting from **HypothesisTestsExtra.jl v0.3.0**, support for `DataFrame` and `GroupedDataFrame` is provided via a **package extension** (`HypothesisTestsExtraDataFramesExt`), not core loading.
+
+This means DataFrame-related methods are only available when the extension is activated by loading its weak dependencies.
+
+:::
+
+### How to enable it
+
+```julia
+using HypothesisTestsExtra
+using DataFrames, CategoricalArrays
+```
+
+> **Recommendation:** Load `DataFrames` and `CategoricalArrays` **before** running any DF/GDF-based tests.
+
+---
+
+### Required packages for extension activation
+
+The extension is configured as:
+
+- **Extension name:** `HypothesisTestsExtraDataFramesExt`
+- **Weak dependencies:** `DataFrames`, `CategoricalArrays`
+
+So to use APIs like:
+
+- `TestName(df::DataFrame, ...)`
+- `TestName(gdf::GroupedDataFrame, ...)`
+- DF/GDF post-hoc helpers
+
+you should ensure both are installed and loaded in the session.
+
+---
+
+### If methods are missing
+
+If you see `MethodError` for `DataFrame`/`GroupedDataFrame` signatures, check:
+
+1. `DataFrames` and `CategoricalArrays` are installed in the active environment.
+2. Both are imported in the current session.
+3. `HypothesisTestsExtra` is loaded in the same environment.
+
+A safe startup pattern is:
+
+```julia
+using DataFrames
+using CategoricalArrays
+using HypothesisTestsExtra
+```
+
+(or equivalent ordering in the same session).
+
 ---
 
 ## 1. Type Safety and Column Validation

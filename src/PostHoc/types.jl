@@ -121,7 +121,7 @@ end
 
 # Internal struct to pass data to algorithms
 struct ContingencyData
-    table::AbstractMatrix{Int}
+    table::AbstractMatrix{<:Integer}
     pairs::Vector{Tuple{Int,Int}}
     alpha::Float64
 end
@@ -135,25 +135,75 @@ struct RawComparisonResult
     note::String
 end
 
-
 function Base.show(io::IO, res::PostHocTestResult)
     println(io, "")
     println(io, repeat("-", 30))
     println(io, "Post-hoc Test: :$(res.method) (alpha=$(res.alpha))")
     println(io, repeat("-", 30))
-    
+
     # Helper to get label or fallback to index
-    function get_label(idx::Int)
-        return get(res.label_map, idx, string(idx))
-    end
+    get_label(idx::Int) = get(res.label_map, idx, string(idx))
 
     if res.use_cld && !isempty(res.cld_letters)
+        group_indices = collect(keys(res.label_map))
+        if isempty(group_indices)
+            group_indices = collect(keys(res.cld_letters))
+        end
+        sort!(group_indices)
+
+        cld_data = Matrix{Any}(undef, length(group_indices), 3)
+        for (i, g) in enumerate(group_indices)
+            cld_data[i, 1] = g
+            cld_data[i, 2] = get_label(g)
+            cld_data[i, 3] = get(res.cld_letters, g, "")
+        end
+
         println(io, "\nCompact Letter Display (Means sorted descending):")
-        pretty_table(io, GroupTestToDataframe(res))
+        pretty_table(
+            io,
+            cld_data;
+            column_labels = ["GroupIndex", "GroupLabel", "CLD"]
+        )
     end
 
     println(io, "\nPairwise Comparisons:")
-    pretty_table(io, DataFrame(res))
+    n = length(res.comparisons)
+    cmp_data = Matrix{Any}(undef, n, 10)
+
+    for (i, c) in enumerate(res.comparisons)
+        cmp_data[i, 1]  = "$(get_label(c.group1)) - $(get_label(c.group2))"
+        cmp_data[i, 2]  = c.diff
+        cmp_data[i, 3]  = c.se
+        cmp_data[i, 4]  = c.statistic
+        cmp_data[i, 5]  = c.crit_val
+        cmp_data[i, 6]  = c.p_value
+        cmp_data[i, 7]  = c.lower_ci
+        cmp_data[i, 8]  = c.upper_ci
+        cmp_data[i, 9]  = c.rejected ? "*" : ""
+        cmp_data[i, 10] = c.note
+    end
+
+    all_labels = ["Contrast", "Diff", "Std.Err", "Stat", "Critical", "P-value", "Lower 95%", "Upper 95%", "Sig", "Note"]
+
+    # Drop columns that are entirely NaN
+    keep_cols = trues(size(cmp_data, 2))
+    if n > 0
+        for j in 1:size(cmp_data, 2)
+            col = cmp_data[:, j]
+            if all(x -> (x isa AbstractFloat) && isnan(x), col)
+                keep_cols[j] = false
+            end
+        end
+    end
+
+    cmp_data_show = cmp_data[:, keep_cols]
+    labels_show   = all_labels[keep_cols]
+
+    pretty_table(
+        io,
+        cmp_data_show;
+        column_labels = labels_show
+    )
 end
 
 
@@ -163,113 +213,32 @@ function Base.show(io::IO, res::ContingencyCellTestResult)
     println(io, "Post-hoc Cell Analysis: :$(res.method)")
     println(io, "Adjustment: :$(res.adjust_method) (alpha=$(res.alpha))")
     println(io, repeat("=", 40))
-    
+
     stat_name = (res.method == :asr) ? "Z" : "OR"
-    
-    # Get DataFrame for display
-    display_df = CellTestToDataframe(res)
-    
-    println(io, "\nTable content: $stat_name (Significance*)")
-    
-    # Print DataFrame using PrettyTables
-    # Header is automatically taken from DataFrame column names
-    pretty_table(io, display_df; 
-        alignment = :c
-    )
-    
-    println(io, "\n* Significant at p < $(res.alpha) after correction.")
-end
-
-
-function DataFrames.DataFrame(res::PostHocTestResult)
-    get_label(idx::Int) = get(res.label_map, idx, string(idx))
-    n = length(res.comparisons)
-    contrasts = Vector{String}(undef, n)
-    diffs = Vector{Float64}(undef, n)
-    ses = Vector{Float64}(undef, n)
-    stats = Vector{Float64}(undef, n)
-    crits = Vector{Float64}(undef, n)
-    p_values = Vector{Float64}(undef, n)
-    lower_cis = Vector{Float64}(undef, n)
-    upper_cis = Vector{Float64}(undef, n)
-    sigs = Vector{String}(undef, n)
-    notes = Vector{String}(undef, n)
-
-    for (i, c) in enumerate(res.comparisons)
-        l1 = get_label(c.group1)
-        l2 = get_label(c.group2)
-        contrasts[i] = "$l1 - $l2"
-        
-        diffs[i] = c.diff
-        ses[i] = c.se
-        stats[i] = c.statistic
-        crits[i] = c.crit_val
-        p_values[i] = c.p_value
-        lower_cis[i] = c.lower_ci
-        upper_cis[i] = c.upper_ci
-        sigs[i] = c.rejected ? "*" : ""
-        notes[i] = c.note
-    end
-
-    return DataFrame(
-        "Contrast"    => contrasts,
-        "Diff"        => diffs,
-        "Std.Err"     => ses,
-        "Stat"        => stats,
-        "Critical"    => crits,
-        "P-value"     => p_values,
-        "Lower 95%"   => lower_cis,
-        "Upper 95%"   => upper_cis,
-        "Sig"         => sigs,
-        "Note"        => notes
-    )
-end
-
-
-"""
-    DataFrames.DataFrame(res::ContingencyCellTestResult)
-
-Convert ContingencyCellTestResult to a detailed DataFrame (Long Format).
-Each row represents a cell in the contingency table.
-"""
-function DataFrames.DataFrame(res::ContingencyCellTestResult)
     rows, cols = size(res.observed)
-    n_total = rows * cols
-    
-    # Pre-allocate vectors
-    r_labels = Vector{String}(undef, n_total)
-    c_labels = Vector{String}(undef, n_total)
-    observed = Vector{Int}(undef, n_total)
-    stats    = Vector{Float64}(undef, n_total)
-    pvals    = Vector{Float64}(undef, n_total)
-    adj_pvals= Vector{Float64}(undef, n_total)
-    is_sig   = Vector{Bool}(undef, n_total)
-    
-    idx = 1
+
+    # Build matrix-style display without relying on DataFrames extension
+    table_data = Matrix{Any}(undef, rows, cols + 1)
     for i in 1:rows
+        table_data[i, 1] = res.row_labels[i]
         for j in 1:cols
-            r_labels[idx]  = res.row_labels[i]
-            c_labels[idx]  = res.col_labels[j]
-            observed[idx]  = res.observed[i, j]
-            stats[idx]     = res.stats_matrix[i, j]
-            pvals[idx]     = res.pvals_matrix[i, j]
-            adj_pvals[idx] = res.adj_pvals_matrix[i, j]
-            is_sig[idx]    = res.sig_matrix[i, j]
-            idx += 1
+            val = round(res.stats_matrix[i, j], digits=2)
+            mark = res.sig_matrix[i, j] ? "*" : ""
+            table_data[i, j + 1] = string(val, mark)
         end
     end
-    
-    stat_col_name = (res.method == :asr) ? "ASR (Z)" : "OddsRatio"
 
-    return DataFrame(
-        "Row"           => r_labels,
-        "Column"        => c_labels,
-        "Observed"      => observed,
-        stat_col_name   => stats,
-        "P-value"       => pvals,
-        "Adj. P-value"  => adj_pvals,
-        "Significant"   => is_sig
+    header = vcat(["RowLabel"], res.col_labels)
+
+    println(io, "\nTable content: $stat_name (Significance*)")
+    pretty_table(
+        io,
+        table_data;
+        column_labels = header,
+        alignment = :c
     )
+
+    println(io, "\n* Significant at p < $(res.alpha) after correction.")
 end
 
 """
@@ -277,34 +246,14 @@ end
 
 Generate a matrix-form DataFrame from ContingencyCellTestResult.
 Cell content format is "Value*" (if significant) or "Value".
+
+**NOTE**: activate the extension `HypothesisTestsExtraDataFramesExt` to use this function:
+```julia
+using HypothesisTestsExtra
+using DataFrames, CategoricalArrays, FreqTables, NamedArrays
+```
 """
-function CellTestToDataframe(res::ContingencyCellTestResult)
-    rows, cols = size(res.observed)
-    
-    # Create base DataFrame, first column is row labels
-    df = DataFrame(RowLabel = res.row_labels)
-    
-    # Iterate through each column (corresponding to contingency table columns)
-    for j in 1:cols
-        col_label = res.col_labels[j]
-        col_data = Vector{String}(undef, rows)
-        
-        for i in 1:rows
-            val = res.stats_matrix[i, j]
-            is_sig = res.sig_matrix[i, j]
-            sig_mark = is_sig ? "*" : ""
-            
-            # Format: "Value (Sig)"
-            col_data[i] = @sprintf("%.2f%s", val, sig_mark)
-        end
-        
-        # Add the column to the DataFrame
-        # Note: Using column labels directly as DataFrame column names
-        df[!, col_label] = col_data
-    end
-    
-    return df
-end
+function CellTestToDataframe end
 
 
 """
@@ -312,23 +261,13 @@ end
 
 Get CLD (Compact Letter Display) labels of PostHocTestResult as a DataFrame.
 Returns columns: `GroupIndex`, `GroupLabel`, and `CLD`.
+
+**NOTE**: activate the extension `HypothesisTestsExtraDataFramesExt` to use this function:
+```julia
+using HypothesisTestsExtra
+using DataFrames, CategoricalArrays, FreqTables, NamedArrays
+```
 """
-function GroupTestToDataframe(res::PostHocTestResult)
-    group_indices = collect(keys(res.label_map))
-    
-    if isempty(group_indices) && !isempty(res.cld_letters)
-        group_indices = collect(keys(res.cld_letters))
-    end
-    
-    sort!(group_indices)
-    
-    labels = [get(res.label_map, g, string(g)) for g in group_indices]
-    
-    letters = [get(res.cld_letters, g, "") for g in group_indices]
-    
-    return DataFrame(
-        GroupIndex = group_indices,
-        GroupLabel = labels,
-        CLD = letters
-    )
-end
+function GroupTestToDataframe end
+
+function DataFrame end

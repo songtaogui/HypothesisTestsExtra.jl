@@ -2,7 +2,7 @@
 
 
 """
-    _get_auto_labels(table::AbstractMatrix, dim::Int, manual_labels::Vector{String}, prefix::String)
+    _get_auto_labels(table::AbstractMatrix, dim::Int, manual_labels::AbstractVector{<:AbstractString}, prefix::String)
 
 Internal helper function to resolve row or column labels.
 
@@ -17,7 +17,7 @@ Resolution Priority:
 - `manual_labels`: Vector of strings provided by the user.
 - `prefix`: Prefix for default label generation (e.g., "Row").
 """
-function _get_auto_labels(table::AbstractMatrix, dim::Int, manual_labels::Vector{String}, prefix::String)
+function _get_auto_labels(table::AbstractMatrix, dim::Int, manual_labels::AbstractVector{<:AbstractString}, prefix::String)
     # 1. Use manual labels if provided and valid
     if !isempty(manual_labels)
         return manual_labels

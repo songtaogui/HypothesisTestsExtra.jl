@@ -17,20 +17,20 @@ function _run_chisq_row(d::ContingencyData)
         col_mask = vec(sum(sub_table, dims=1) .> 0)
         clean_sub = sub_table[:, col_mask]
 
-        stat_val = 0.0
-        p_val = 1.0
-        note = ""
+        stat_val = NaN
+        p_val = NaN
+        note = "Chisq"
 
         try
             if size(clean_sub, 2) < 2
                 note = "Degenerate"
             else
                 ct = ChisqTest(clean_sub)
-                stat_val = ct.chisq
+                stat_val = ct.stat
                 p_val = pvalue(ct)
             end
         catch
-            p_val = 1.0
+            p_val = NaN
             note = "Error"
         end
 
@@ -56,8 +56,8 @@ function _run_fisher_row(d::ContingencyData)
         col_mask = vec(sum(sub_table, dims=1) .> 0)
         clean_sub = sub_table[:, col_mask]
 
-        stat_val = 0.0
-        p_val = 1.0
+        stat_val = NaN
+        p_val = NaN
         note = ""
 
         cols = size(clean_sub, 2)
