@@ -17,29 +17,11 @@ using StatsBase
 using Random
 using SpecialFunctions: logabsgamma
 
-# using DataFrames
-# using NamedArrays
-# using FreqTables
-# using CategoricalArrays
-
 # ==============================================================================
 # Import functions to extend them
 # ==============================================================================
 # Base utility
 import HypothesisTests: pvalue
-
-# Categorical / Contingency Tests (Added based on dataframe_ext.jl)
-import HypothesisTests: ChisqTest, FisherExactTest, PowerDivergenceTest
-
-# K-Sample Tests (ANOVA & Non-parametric)
-import HypothesisTests: OneWayANOVATest, KruskalWallisTest
-
-# Variance / Homogeneity Tests (Added based on dataframe_ext.jl)
-import HypothesisTests: LeveneTest, BrownForsytheTest, FlignerKilleenTest
-
-# 2-Sample Tests (Parametric & Non-parametric)
-import HypothesisTests: EqualVarianceTTest, UnequalVarianceTTest, MannWhitneyUTest
-import HypothesisTests: VarianceFTest, ApproximateTwoSampleKSTest
 
 # ==============================================================================
 # Include source files
@@ -48,9 +30,6 @@ include("NewTests/welchanova.jl")
 include("NewTests/fisherrxc.jl")
 include("NewTests/trends.jl")
 include("PostHoc/posthoc.jl")
-# include("Dispatch/helpers.jl")
-# include("Dispatch/dataframe_ext.jl")
-# include("Dispatch/groupeddataframe_ext.jl")
 
 # ==============================================================================
 # Export new types and functions
