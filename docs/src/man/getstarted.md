@@ -12,7 +12,7 @@
 
 ## Quick Start
 
-```@example v0.3.0
+```@repl
 using HypothesisTestsExtra
 using DataFrames, CategoricalArrays
 
@@ -22,7 +22,6 @@ wt = WelchANOVATest(groups...)
 
 # 2. Post-Hoc Test with Tukey's HSD
 ph = PostHocPar(groups; method=:tukey, cld=true)
-println(ph)
 
 # 3. DataFrame Support
 df = DataFrame(Group=["A","A","B","B"], Value=[1,2, 10,11])
