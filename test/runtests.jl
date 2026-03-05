@@ -14,7 +14,7 @@ Random.seed!(1234)
 
 @testset "HypothesisTestsExtra.jl Package Tests" begin
     # Optional package QA
-    # Aqua.test_all(HypothesisTestsExtra; ambiguities=false)
+    Aqua.test_all(HypothesisTestsExtra; ambiguities=false)
 
     include("common/test_formatters_and_helpers.jl")
     include("core/test_api_raw.jl")
